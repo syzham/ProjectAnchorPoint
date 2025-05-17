@@ -26,7 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             CLASS_NAME,
             L"Project Anchor Point",
             WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+            CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight,
             nullptr, nullptr, hInstance, nullptr
     );
 

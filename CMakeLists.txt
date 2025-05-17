@@ -7,7 +7,9 @@ add_executable(ProjectAnchorPoint
         include/window/window.h
         src/window/window.cpp
         include/graphics/graphics.h
-        src/graphics/graphics.cpp)
+        src/graphics/graphics.cpp
+        include/core/config.h
+        src/core/config.cpp)
 
 target_link_libraries(
         ProjectAnchorPoint

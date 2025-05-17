@@ -2,6 +2,7 @@
 #define PROJECTANCHORPOINT_GRAPHICS_H
 
 #include <d3d11.h>
+#include "core/config.h"
 
 #pragma comment (lib, "d3d11.lib")
 

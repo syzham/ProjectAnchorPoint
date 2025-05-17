@@ -13,9 +13,12 @@ void InitD3D(HWND hWnd) {
     scd.BufferCount = 1;
     scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    scd.BufferDesc.Height = screenHeight;
+    scd.BufferDesc.Width = screenWidth;
     scd.OutputWindow = hWnd;
     scd.SampleDesc.Count = 4;
     scd.Windowed = TRUE;
+    scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
     D3D11CreateDeviceAndSwapChain(nullptr,
                                   D3D_DRIVER_TYPE_HARDWARE,
@@ -43,8 +46,8 @@ void InitD3D(HWND hWnd) {
 
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
-    viewport.Width = 800;
-    viewport.Height = 600;
+    viewport.Width = screenWidth;
+    viewport.Height = screenHeight;
 
     dc->RSSetViewports(1, &viewport);
 }
@@ -57,6 +60,7 @@ void RenderFrame() {
 
 void CleanD3D()
 {
+    sc->SetFullscreenState(FALSE, nullptr);
     sc->Release();
     backBuffer->Release();
     device->Release();
