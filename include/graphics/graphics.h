@@ -8,8 +8,10 @@
 extern IDXGISwapChain *sc;
 extern ID3D11Device *device;
 extern ID3D11DeviceContext *dc;
+extern ID3D11RenderTargetView *backBuffer;
 
 void InitD3D(HWND hWnd);
+void RenderFrame();
 void CleanD3D();
 
 #endif //PROJECTANCHORPOINT_GRAPHICS_H
