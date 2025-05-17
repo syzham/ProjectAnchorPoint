@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(ProjectAnchorPoint
         include/window/window.h
-        src/window/window.cpp)
+        src/window/window.cpp
+        include/graphics/graphics.h
+        src/graphics/graphics.cpp)
 
 target_link_libraries(
         ProjectAnchorPoint
