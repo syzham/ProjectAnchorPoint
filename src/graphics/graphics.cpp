@@ -4,6 +4,8 @@ IDXGISwapChain *sc = nullptr;
 ID3D11Device *device = nullptr;
 ID3D11DeviceContext *dc = nullptr;
 ID3D11RenderTargetView *backBuffer = nullptr;
+Scene g_scene;
+Shader g_shader;
 
 void InitD3D(HWND hWnd) {
     DXGI_SWAP_CHAIN_DESC scd;
@@ -50,16 +52,27 @@ void InitD3D(HWND hWnd) {
     viewport.Height = screenHeight;
 
     dc->RSSetViewports(1, &viewport);
+
+    InitGraphics(firstScene);
+}
+
+void InitGraphics(const std::string& sceneFile) {
+    g_scene.Load(sceneFile, device);
+    g_shader.Load(device, L"shaders/VS.hlsl", L"shaders/PS.hlsl");
 }
 
 void RenderFrame() {
     float clearColour[4] = {0.2f, 0.4f, 0.6f, 1.0f};
     dc->ClearRenderTargetView(backBuffer, clearColour);
+    g_shader.Bind(dc);
+    g_scene.Draw(dc);
     sc->Present(0, 0);
 }
 
 void CleanD3D()
 {
+    g_shader.Release();
+    g_scene.Unload();
     sc->SetFullscreenState(FALSE, nullptr);
     sc->Release();
     backBuffer->Release();
