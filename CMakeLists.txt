@@ -15,7 +15,8 @@ add_executable(ProjectAnchorPoint
         include/graphics/scene.h
         src/graphics/scene.cpp
         include/graphics/shader.h
-        src/graphics/shader.cpp)
+        src/graphics/shader.cpp
+)
 
 target_link_libraries(
         ProjectAnchorPoint
