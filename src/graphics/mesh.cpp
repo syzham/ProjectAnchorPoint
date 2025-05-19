@@ -104,4 +104,5 @@ void Mesh::Draw(ID3D11DeviceContext *context) {
 
 void Mesh::Release() {
     vertexBuffer->Release();
+    materialCBuffer->Release();
 }

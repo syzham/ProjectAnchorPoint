@@ -2,11 +2,30 @@
 #define PROJECTANCHORPOINT_SCENE_H
 
 #include <vector>
+#include <DirectXMath.h>
 #include "graphics/mesh.h"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
+struct ObjectBuffer {
+    DirectX::XMMATRIX world;
+};
+
+class SceneObject {
+public:
+    float position[3] = {0, 0, 0};
+    float rotation[3] = {0, 0, 0};
+    float scale[3] = {0, 0, 0};
+
+    Mesh mesh;
+
+    DirectX::XMMATRIX GetWorldMatrix() const;
+};
 
 class Scene {
 public:
-    std::vector<Mesh> meshes;
+    std::vector<SceneObject> objects;
+    ID3D11Buffer* objectBuffer = nullptr;
 
     void Load(const std::string& sceneFile, ID3D11Device* device);
     void Draw(ID3D11DeviceContext* context);
