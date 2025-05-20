@@ -47,7 +47,7 @@ void Scene::Draw(ID3D11DeviceContext *context) {
         context->Map(objectBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
         auto* buffer = reinterpret_cast<ObjectBuffer*>(mapped.pData);
-        buffer->world = XMMatrixTranspose(object.GetWorldMatrix());
+        buffer->world = object.GetWorldMatrix() * camera.GetViewMatrix() * camera.GetProjectionMatrix();
 
         context->Unmap(objectBuffer, 0);
         context->VSSetConstantBuffers(1, 1, &objectBuffer);

@@ -2,7 +2,7 @@
 #define PROJECTANCHORPOINT_SCENE_H
 
 #include <vector>
-#include <DirectXMath.h>
+#include "graphics/camera.h"
 #include "graphics/mesh.h"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -26,6 +26,7 @@ class Scene {
 public:
     std::vector<SceneObject> objects;
     ID3D11Buffer* objectBuffer = nullptr;
+    Camera camera;
 
     void Load(const std::string& sceneFile, ID3D11Device* device);
     void Draw(ID3D11DeviceContext* context);

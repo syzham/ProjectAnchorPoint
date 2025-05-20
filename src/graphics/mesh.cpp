@@ -82,13 +82,6 @@ void Mesh::CreateVertexBuffer(ID3D11Device *device) {
 }
 
 void Mesh::Draw(ID3D11DeviceContext *context) {
-    UINT stride = sizeof(Vertex);
-    UINT offset = 0;
-    context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-    context->IASetPrimitiveTopology(topology);
-    context->Draw(static_cast<UINT>(vertices.size()), 0);
-
-
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     context->Map(materialCBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
@@ -100,6 +93,12 @@ void Mesh::Draw(ID3D11DeviceContext *context) {
 
     context->Unmap(materialCBuffer, 0);
     context->PSSetConstantBuffers(0, 1, &materialCBuffer);
+
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+    context->IASetPrimitiveTopology(topology);
+    context->Draw(static_cast<UINT>(vertices.size()), 0);
 }
 
 void Mesh::Release() {
