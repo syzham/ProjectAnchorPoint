@@ -12,6 +12,8 @@ extern IDXGISwapChain *sc;
 extern ID3D11Device *device;
 extern ID3D11DeviceContext *dc;
 extern ID3D11RenderTargetView *backBuffer;
+extern ID3D11DepthStencilView *depthView;
+extern ID3D11DepthStencilState *depthState;
 extern Scene g_scene;
 extern Shader g_shader;
 
