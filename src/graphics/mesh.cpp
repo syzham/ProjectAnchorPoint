@@ -5,8 +5,10 @@ std::unordered_map<std::string, Material> Mesh::materials;
 void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top) {
     topology = top;
     std::ifstream file(filename);
-    std::vector<Vertex> tempVertex;
-    std::string line;
+    std::vector<Coords> tempPosition;
+    std::vector<Coords> tempNormal;
+    std::string line, triplet, token;
+    float x, y, z;
 
     while (std::getline(file, line)) {
         std::istringstream iss(line);
@@ -14,15 +16,23 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
         iss >> type;
 
         if (type == "v") {
-            float x, y, z;
             iss >> x >> y >> z;
-            tempVertex.push_back({{x, y, z}});
+            tempPosition.push_back({x, y, z});
+        } else if (type == "vn") {
+            iss >> x >> y >> z;
+            tempNormal.push_back({x, y, z});
         } else if (type == "f") {
-            unsigned int i1, i2, i3;
-            iss >> i1 >> i2 >> i3;
-            vertices.push_back(tempVertex[i1 - 1]);
-            vertices.push_back(tempVertex[i2 - 1]);
-            vertices.push_back(tempVertex[i3 - 1]);
+            unsigned int i, vt, vn;
+            while (iss >> triplet) {
+                std::istringstream vec(triplet);
+                if (std::getline(vec, token, '/') && !token.empty())
+                    i = std::stoi(token);
+                if (std::getline(vec, token, '/') && !token.empty())
+                    vt = std::stoi(token);
+                if (std::getline(vec, token, '/') && !token.empty())
+                    vn = std::stoi(token);
+                vertices.push_back({{tempPosition[i - 1]}, {tempNormal[vn - 1]}});
+            }
         } else if (type == "mtllib") {
             iss >> mtlPath;
             std::filesystem::path base = std::filesystem::path(filename).parent_path();
@@ -89,7 +99,6 @@ void Mesh::Draw(ID3D11DeviceContext *context) {
     buffer->diffuseColor[0] = material.diffuseColor[0];
     buffer->diffuseColor[1] = material.diffuseColor[1];
     buffer->diffuseColor[2] = material.diffuseColor[2];
-    buffer->diffuseColor[3] = material.diffuseColor[3];
 
     context->Unmap(materialCBuffer, 0);
     context->PSSetConstantBuffers(0, 1, &materialCBuffer);

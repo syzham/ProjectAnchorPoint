@@ -3,11 +3,25 @@
     "objects": [
         {
             "name": "Red Triangle",
+            "type": "mesh",
             "model": "assets/models/triangle.obj",
             "topology": "TRIANGLELIST",
             "transform": {
                 "position": [0.0, 0.0, 0.0],
                 "rotation": [0.0, 0.0, 0.0],
+                "scale": [1.0, 1.0, 1.0]
+            }
+        },
+        {
+            "name": "Light",
+            "type": "light",
+            "lightType": 0,
+            "range": 1,
+            "intensity": 1,
+            "color": [1.0, 1.0, 1.0],
+            "transform": {
+                "position": [0.0, 0.0, 0.0],
+                "rotation": [0.0, 0.0, -1.0],
                 "scale": [1.0, 1.0, 1.0]
             }
         }

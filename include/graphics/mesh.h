@@ -9,12 +9,17 @@
 #include <unordered_map>
 #include <filesystem>
 
+struct Coords {
+    float coord[3];
+};
+
 struct Vertex {
-    float pos[3];
+    Coords pos;
+    Coords normal;
 };
 
 struct Material {
-    float diffuseColor[4] = {1, 1, 1, 1};
+    float diffuseColor[4] = {1, 1, 1};
 };
 
 
