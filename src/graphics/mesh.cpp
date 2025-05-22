@@ -22,16 +22,22 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
             iss >> x >> y >> z;
             tempNormal.push_back({x, y, z});
         } else if (type == "f") {
-            unsigned int i, vt, vn;
+            std::vector<unsigned> fIndices;
+            std::vector<unsigned> vtIndices;
+            std::vector<unsigned> vnIndices;
             while (iss >> triplet) {
                 std::istringstream vec(triplet);
                 if (std::getline(vec, token, '/') && !token.empty())
-                    i = std::stoi(token);
+                    fIndices.push_back(std::stoi(token));
                 if (std::getline(vec, token, '/') && !token.empty())
-                    vt = std::stoi(token);
+                    vtIndices.push_back(std::stoi(token));
                 if (std::getline(vec, token, '/') && !token.empty())
-                    vn = std::stoi(token);
-                vertices.push_back({{tempPosition[i - 1]}, {tempNormal[vn - 1]}});
+                    vnIndices.push_back(std::stoi(token));
+            }
+            for (size_t i = 1; i + 1 < fIndices.size(); ++i) {
+                vertices.push_back({tempPosition[fIndices[0] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[0] - 1] : Coords({0, 0, 0})});
+                vertices.push_back({tempPosition[fIndices[i] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i] - 1] : Coords({0, 0, 0})});
+                vertices.push_back({tempPosition[fIndices[i+1] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i+1] - 1] : Coords({0, 0, 0})});
             }
         } else if (type == "mtllib") {
             iss >> mtlPath;
