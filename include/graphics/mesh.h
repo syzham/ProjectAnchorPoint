@@ -8,18 +8,25 @@
 #include <sstream>
 #include <unordered_map>
 #include <filesystem>
+#include <WICTextureLoader11.h>
 
 struct Coords {
-    float coord[3];
+    float x, y, z;
+};
+
+struct UV {
+    float u, v;
 };
 
 struct Vertex {
     Coords pos;
     Coords normal;
+    UV uv;
 };
 
 struct Material {
-    float diffuseColor[4] = {1, 1, 1};
+    float diffuseColor[3] = {1, 1, 1};
+    std::string texture;
 };
 
 
@@ -29,6 +36,8 @@ public:
     Material material;
     ID3D11Buffer* vertexBuffer = nullptr;
     ID3D11Buffer* materialCBuffer = nullptr;
+    ID3D11ShaderResourceView* textureSRV = nullptr;
+    ID3D11SamplerState* samplerState = nullptr;
     D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     void LoadFromOBJ(const std::string& filename, D3D11_PRIMITIVE_TOPOLOGY top);

@@ -19,6 +19,7 @@ add_executable(ProjectAnchorPoint
         include/graphics/camera.h
         src/graphics/camera.cpp
         include/graphics/light.h
+        src/WICTextureLoader11.cpp
 )
 
 target_link_libraries(

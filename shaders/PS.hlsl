@@ -8,13 +8,15 @@ struct Light {
 };
 
 StructuredBuffer<Light> lights : register(t0);
+Texture2D tex : register(t1);
+SamplerState samp : register(s0);
 
 cbuffer MaterialData : register(b0)
 {
     float3 diffuseColor;
 }
 
-float4 main(float4 position : SV_POSITION, float3 worldNormal : NORMAL) : SV_TARGET {
+float4 main(float4 position : SV_POSITION, float3 worldNormal : NORMAL, float2 uv : TEXCOORD) : SV_TARGET {
     float3 result = float3(0, 0, 0);
 
     for (uint i = 0; i < lights.Length; ++i) {
@@ -33,5 +35,5 @@ float4 main(float4 position : SV_POSITION, float3 worldNormal : NORMAL) : SV_TAR
         result += NdotL * light.color * light.intensity;
     }
 
-    return float4(result * diffuseColor.rgb, 1.0);
+    return float4(result * diffuseColor.rgb, 1.0) * tex.Sample(samp, uv);
 }

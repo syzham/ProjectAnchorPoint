@@ -6,6 +6,7 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
     topology = top;
     std::ifstream file(filename);
     std::vector<Coords> tempPosition;
+    std::vector<UV> tempUv;
     std::vector<Coords> tempNormal;
     std::string line, triplet, token;
     float x, y, z;
@@ -18,6 +19,9 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
         if (type == "v") {
             iss >> x >> y >> z;
             tempPosition.push_back({x, y, z});
+        } else if (type == "vt") {
+            iss >> x >> y;
+            tempUv.push_back({x, y});
         } else if (type == "vn") {
             iss >> x >> y >> z;
             tempNormal.push_back({x, y, z});
@@ -35,9 +39,17 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
                     vnIndices.push_back(std::stoi(token));
             }
             for (size_t i = 1; i + 1 < fIndices.size(); ++i) {
-                vertices.push_back({tempPosition[fIndices[0] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[0] - 1] : Coords({0, 0, 0})});
-                vertices.push_back({tempPosition[fIndices[i] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i] - 1] : Coords({0, 0, 0})});
-                vertices.push_back({tempPosition[fIndices[i+1] - 1], (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i+1] - 1] : Coords({0, 0, 0})});
+                vertices.push_back({tempPosition[fIndices[0] - 1],
+                                    (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[0] - 1] : Coords({0, 0, 0}),
+                                    (fIndices.size() == vtIndices.size()) ? tempUv[vtIndices[0] - 1] : UV({0, 0})});
+
+                vertices.push_back({tempPosition[fIndices[i] - 1],
+                                    (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i] - 1] : Coords({0, 0, 0}),
+                                    (fIndices.size() == vtIndices.size()) ? tempUv[vtIndices[i] - 1] : UV({0, 0})});
+
+                vertices.push_back({tempPosition[fIndices[i+1] - 1],
+                                    (fIndices.size() == vnIndices.size()) ? tempNormal[vnIndices[i+1] - 1] : Coords({0, 0, 0}),
+                                    (fIndices.size() == vtIndices.size()) ? tempUv[vtIndices[i+1] - 1] : UV({0, 0})});
             }
         } else if (type == "mtllib") {
             iss >> mtlPath;
@@ -52,7 +64,7 @@ void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top
 
 void Mesh::LoadMTL(const std::string &mtlPath) {
     std::ifstream file(mtlPath);
-    std::string line, currentName;
+    std::string line, currentName, textPath;
 
     while (std::getline(file, line)) {
         std::istringstream iss(line);
@@ -71,6 +83,10 @@ void Mesh::LoadMTL(const std::string &mtlPath) {
             Mesh::materials[currentName].diffuseColor[0] = r;
             Mesh::materials[currentName].diffuseColor[1] = g;
             Mesh::materials[currentName].diffuseColor[2] = b;
+        } else if (token == "map_Kd") {
+            iss >> textPath;
+            std::filesystem::path base = std::filesystem::path(mtlPath).parent_path();
+            Mesh::materials[currentName].texture = (base / textPath).string();
         }
     }
 }
@@ -95,6 +111,13 @@ void Mesh::CreateVertexBuffer(ID3D11Device *device) {
     matDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
     device->CreateBuffer(&matDesc, nullptr, &materialCBuffer);
+
+    DirectX::CreateWICTextureFromFile(device, std::wstring(material.texture.begin(), material.texture.end()).c_str(), nullptr, &textureSRV);
+
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = sampDesc.AddressV = sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    device->CreateSamplerState(&sampDesc, &samplerState);
 }
 
 void Mesh::Draw(ID3D11DeviceContext *context) {
@@ -114,9 +137,14 @@ void Mesh::Draw(ID3D11DeviceContext *context) {
     context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
     context->IASetPrimitiveTopology(topology);
     context->Draw(static_cast<UINT>(vertices.size()), 0);
+
+    context->PSSetShaderResources(1, 1, &textureSRV);
+    context->PSSetSamplers(0, 1, &samplerState);
 }
 
 void Mesh::Release() {
     vertexBuffer->Release();
     materialCBuffer->Release();
+    textureSRV->Release();
+    samplerState->Release();
 }

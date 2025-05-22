@@ -1,2 +1,2 @@
 newmtl RedMaterial
-Kd 1.0 0.0 0.0
+map_Kd ../textures/bricks.jpg
