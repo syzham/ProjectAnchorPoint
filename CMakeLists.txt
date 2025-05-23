@@ -20,6 +20,10 @@ add_executable(ProjectAnchorPoint
         src/graphics/camera.cpp
         include/graphics/light.h
         src/WICTextureLoader11.cpp
+        include/core/gameEngine.h
+        include/game/SceneManager.h
+        src/game/SceneManager.cpp
+        src/core/gameEngine.cpp
 )
 
 target_link_libraries(

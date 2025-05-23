@@ -37,6 +37,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     InitD3D(hwnd);
 
+    GameEngine gameEngine;
+    gameEngine.Init();
+
     MSG msg = {};
     while (true) {
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -47,9 +50,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         if (msg.message == WM_QUIT)
             break;
+
+        ClearFrame();
+        gameEngine.Update();
         RenderFrame();
     }
 
+    gameEngine.Shutdown();
     CleanD3D();
 
     return 0;

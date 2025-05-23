@@ -9,8 +9,7 @@ void Scene::Load(const std::string& sceneFile, ID3D11Device *device) {
     objDesc.StructureByteStride = 0;
 
     device->CreateBuffer(&objDesc, nullptr, &objectBuffer);
-
-    std::ifstream in(sceneFile);
+    std::ifstream in("scenes/" + sceneFile + ".scene");
     if (!in)
         return;
 

@@ -6,7 +6,6 @@ ID3D11DeviceContext *dc = nullptr;
 ID3D11RenderTargetView *backBuffer = nullptr;
 ID3D11DepthStencilView *depthView = nullptr;
 ID3D11DepthStencilState *depthState = nullptr;
-Scene g_scene;
 Shader g_shader;
 
 void InitD3D(HWND hWnd) {
@@ -57,10 +56,10 @@ void InitD3D(HWND hWnd) {
 
     dc->RSSetViewports(1, &viewport);
 
-    InitGraphics(firstScene);
+    InitGraphics();
 }
 
-void InitGraphics(const std::string& sceneFile) {
+void InitGraphics() {
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = screenWidth;
     depthDesc.Height = screenHeight;
@@ -92,11 +91,10 @@ void InitGraphics(const std::string& sceneFile) {
     dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
     device->CreateDepthStencilState(&dsDesc, &depthState);
 
-    g_scene.Load(sceneFile, device);
     g_shader.Load(device, L"shaders/VS.hlsl", L"shaders/PS.hlsl");
 }
 
-void RenderFrame() {
+void ClearFrame() {
     float clearColour[4] = {0.2f, 0.4f, 0.6f, 1.0f};
     dc->ClearRenderTargetView(backBuffer, clearColour);
     dc->ClearDepthStencilView(depthView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -104,14 +102,15 @@ void RenderFrame() {
     dc->OMSetDepthStencilState(depthState, 0);
 
     g_shader.Bind(dc);
-    g_scene.Draw(dc);
+}
+
+void RenderFrame() {
     sc->Present(0, 0);
 }
 
 void CleanD3D()
 {
     g_shader.Release();
-    g_scene.Unload();
     depthView->Release();
     depthState->Release();
     sc->SetFullscreenState(FALSE, nullptr);
