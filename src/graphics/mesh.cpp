@@ -2,6 +2,7 @@
 
 std::unordered_map<std::string, Material> Mesh::materials;
 
+
 void Mesh::LoadFromOBJ(const std::string &filename, D3D11_PRIMITIVE_TOPOLOGY top) {
     topology = top;
     std::ifstream file(filename);
@@ -91,7 +92,7 @@ void Mesh::LoadMTL(const std::string &mtlPath) {
     }
 }
 
-void Mesh::CreateVertexBuffer(ID3D11Device *device) {
+void Mesh::CreateVertexBuffer() {
     D3D11_BUFFER_DESC desc = {};
     desc.Usage = D3D11_USAGE_DYNAMIC;
     desc.ByteWidth = sizeof(Vertex) * vertices.size();
@@ -105,7 +106,7 @@ void Mesh::CreateVertexBuffer(ID3D11Device *device) {
 
 
     D3D11_BUFFER_DESC matDesc = {};
-    matDesc.ByteWidth = sizeof(Material);
+    matDesc.ByteWidth = sizeof(MaterialBuffer);
     matDesc.Usage = D3D11_USAGE_DYNAMIC;
     matDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     matDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -120,26 +121,36 @@ void Mesh::CreateVertexBuffer(ID3D11Device *device) {
     device->CreateSamplerState(&sampDesc, &samplerState);
 }
 
-void Mesh::Draw(ID3D11DeviceContext *context) {
+void Mesh::Draw(DirectX::XMMATRIX worldMatrix) {
     D3D11_MAPPED_SUBRESOURCE mapped = {};
-    context->Map(materialCBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    dc->Map(objectBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
-    auto* buffer = reinterpret_cast<Material*>(mapped.pData);
-    buffer->diffuseColor[0] = material.diffuseColor[0];
-    buffer->diffuseColor[1] = material.diffuseColor[1];
-    buffer->diffuseColor[2] = material.diffuseColor[2];
+    auto* objBuffer = reinterpret_cast<ObjectBuffer*>(mapped.pData);
+    objBuffer->world = worldMatrix;
+    objBuffer->worldViewProj = worldMatrix * Camera::getMainCamera().GetViewMatrix() * Camera::getMainCamera().GetProjectionMatrix();
 
-    context->Unmap(materialCBuffer, 0);
-    context->PSSetConstantBuffers(0, 1, &materialCBuffer);
+    dc->Unmap(objectBuffer, 0);
+    dc->VSSetConstantBuffers(1, 1, &objectBuffer);
+
+    D3D11_MAPPED_SUBRESOURCE matMapped = {};
+    dc->Map(materialCBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &matMapped);
+
+    auto* materialBuffer = reinterpret_cast<MaterialBuffer*>(matMapped.pData);
+    materialBuffer->diffuseColor[0] = material.diffuseColor[0];
+    materialBuffer->diffuseColor[1] = material.diffuseColor[1];
+    materialBuffer->diffuseColor[2] = material.diffuseColor[2];
+
+    dc->Unmap(materialCBuffer, 0);
+    dc->PSSetConstantBuffers(0, 1, &materialCBuffer);
 
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
-    context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-    context->IASetPrimitiveTopology(topology);
-    context->Draw(static_cast<UINT>(vertices.size()), 0);
+    dc->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+    dc->IASetPrimitiveTopology(topology);
+    dc->Draw(static_cast<UINT>(vertices.size()), 0);
 
-    context->PSSetShaderResources(1, 1, &textureSRV);
-    context->PSSetSamplers(0, 1, &samplerState);
+    dc->PSSetShaderResources(1, 1, &textureSRV);
+    dc->PSSetSamplers(0, 1, &samplerState);
 }
 
 void Mesh::Release() {

@@ -6,6 +6,7 @@ ID3D11DeviceContext *dc = nullptr;
 ID3D11RenderTargetView *backBuffer = nullptr;
 ID3D11DepthStencilView *depthView = nullptr;
 ID3D11DepthStencilState *depthState = nullptr;
+ID3D11Buffer *objectBuffer = nullptr;
 Shader g_shader;
 
 void InitD3D(HWND hWnd) {
@@ -60,6 +61,16 @@ void InitD3D(HWND hWnd) {
 }
 
 void InitGraphics() {
+
+    D3D11_BUFFER_DESC objDesc = {};
+    objDesc.ByteWidth = sizeof(ObjectBuffer);
+    objDesc.Usage = D3D11_USAGE_DYNAMIC;
+    objDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    objDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    objDesc.StructureByteStride = 0;
+
+    device->CreateBuffer(&objDesc, nullptr,&objectBuffer);
+
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = screenWidth;
     depthDesc.Height = screenHeight;

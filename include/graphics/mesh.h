@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <filesystem>
 #include <WICTextureLoader11.h>
+#include "graphics/camera.h"
+#include "graphics/graphics.h"
 
 struct Coords {
     float x, y, z;
@@ -22,6 +24,10 @@ struct Vertex {
     Coords pos;
     Coords normal;
     UV uv;
+};
+
+struct MaterialBuffer {
+    float diffuseColor[4];
 };
 
 struct Material {
@@ -41,8 +47,8 @@ public:
     D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     void LoadFromOBJ(const std::string& filename, D3D11_PRIMITIVE_TOPOLOGY top);
-    void CreateVertexBuffer(ID3D11Device* device);
-    void Draw(ID3D11DeviceContext* context);
+    void CreateVertexBuffer();
+    void Draw(DirectX::XMMATRIX worldMatrix);
     void Release();
 
 private:

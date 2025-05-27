@@ -2,7 +2,11 @@
 
 
 void GameEngine::Init() {
-    SceneManager::getInstance().setWindow(device, dc);
+#ifdef _DEBUG
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONOUT$", "w", stderr);
+#endif
     SceneManager::getInstance().loadFirstScene();
 }
 

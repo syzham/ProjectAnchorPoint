@@ -26,3 +26,8 @@ void Camera::SetPosition(float x, float y, float z) {
 void Camera::Move(float x, float y, float z) {
     position = DirectX::XMVectorAdd(position, DirectX::XMVectorSet(x, y, z, 1));
 }
+
+Camera& Camera::getMainCamera() {
+    static Camera main;
+    return main;
+}

@@ -10,18 +10,13 @@ void SceneManager::loadFirstScene() {
     }
 
     sceneName = firstScene;
-    currentScene.Load(firstScene, device);
+    currentScene.Load(firstScene);
 }
 
 void SceneManager::update() {
-    currentScene.Draw(context);
+    currentScene.Draw();
 }
 
 void SceneManager::unloadScene() {
     currentScene.Unload();
-}
-
-void SceneManager::setWindow(ID3D11Device *dev, ID3D11DeviceContext *con) {
-    device = dev;
-    context = con;
 }

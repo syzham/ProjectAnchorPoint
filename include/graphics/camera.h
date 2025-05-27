@@ -5,6 +5,8 @@
 
 class Camera {
 public:
+    static Camera& getMainCamera();
+
     void SetPerspective(float fov, float aspect, float nearZ, float farZ);
     void SetPosition(float x, float y, float z);
     void LookAt(float x, float y, float z);

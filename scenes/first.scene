@@ -2,27 +2,29 @@
     "sceneName": "First Scene",
     "objects": [
         {
-            "name": "Red Triangle",
-            "type": "mesh",
-            "model": "assets/models/Cube.obj",
-            "topology": "TRIANGLELIST",
-            "transform": {
+            "Name": "Red Triangle",
+            "Transform": {
                 "position": [0.0, -1.4, 4.0],
                 "rotation": [0.0, 0.0, 0.0],
                 "scale": [1.0, 1.0, 1.0]
+            },
+            "MeshRenderer": {
+                "model": "assets/models/Cube.obj",
+                "topology": "TRIANGLELIST"
             }
         },
         {
-            "name": "Light",
-            "type": "light",
-            "lightType": 0,
-            "range": 1,
-            "intensity": 1,
-            "color": [1.0, 1.0, 1.0],
-            "transform": {
+            "Name": "Light",
+            "Transform": {
                 "position": [0.0, 0.0, 0.0],
                 "rotation": [0.0, -1.0, 1.0],
                 "scale": [1.0, 1.0, 1.0]
+            },
+            "Light": {
+                "lightType": 0,
+                "range": 1,
+                "intensity": 1,
+                "color": [1.0, 1.0, 1.0]
             }
         }
     ]

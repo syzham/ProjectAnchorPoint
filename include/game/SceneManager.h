@@ -19,12 +19,9 @@ public:
     Scene currentScene = {};
     std::string sceneName = "";
     void loadFirstScene();
-    void setWindow(ID3D11Device *dev, ID3D11DeviceContext *con);
     void update();
     void unloadScene();
 private:
-    ID3D11Device *device;
-    ID3D11DeviceContext *context;
     SceneManager() = default;
 };
 

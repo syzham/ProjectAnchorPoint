@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.31)
 project(ProjectAnchorPoint)
 
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    add_compile_definitions(_DEBUG)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(ProjectAnchorPoint
@@ -24,6 +28,11 @@ add_executable(ProjectAnchorPoint
         include/game/SceneManager.h
         src/game/SceneManager.cpp
         src/core/gameEngine.cpp
+        include/game/components/component.h
+        src/game/components/transform.cpp
+        include/game/components/transform.h
+        include/game/components/meshrenderer.h
+        src/game/components/meshrenderer.cpp
 )
 
 target_link_libraries(

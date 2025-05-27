@@ -2,43 +2,41 @@
 #define PROJECTANCHORPOINT_SCENE_H
 
 #include <vector>
+#include "graphics/graphics.h"
 #include "graphics/camera.h"
 #include "graphics/light.h"
-#include "graphics/mesh.h"
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
+#include "game/components/component.h"
 
-struct ObjectBuffer {
-    DirectX::XMMATRIX worldViewProj;
-    DirectX::XMMATRIX world;
-};
-
+class Component;
 class SceneObject {
 public:
-    float position[3] = {0, 0, 0};
-    float rotation[3] = {0, 0, 0};
-    float scale[3] = {0, 0, 0};
+    std::string name;
+    std::vector<std::unique_ptr<Component>> components;
 
-    Mesh mesh;
+    template<typename T>
+    T* getComponent(int instance) {
+        for (auto& comp : components) {
+            if (!comp || !comp.get()) continue;
+            if (auto ret = dynamic_cast<T*>(comp.get())) {
+                return ret;
+            }
+        }
+        return nullptr;
+    }
 
-    DirectX::XMMATRIX GetWorldMatrix() const;
 };
 
 class Scene {
 public:
-    std::vector<SceneObject> objects;
+    std::vector<std::unique_ptr<SceneObject>> objects;
     std::vector<Light> lights;
-    ID3D11Buffer* objectBuffer = nullptr;
     ID3D11Buffer* lightBuffer = nullptr;
     ID3D11ShaderResourceView* lightSRV = nullptr;
     Camera camera;
 
-    void Load(const std::string& sceneFile, ID3D11Device* device);
-    void Draw(ID3D11DeviceContext* context);
+    void Load(const std::string& sceneFile);
+    void Draw();
     void Unload();
-
-private:
-    D3D11_PRIMITIVE_TOPOLOGY ParseTopology(const std::string& str);
 };
 
 #endif //PROJECTANCHORPOINT_SCENE_H
