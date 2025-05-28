@@ -1,4 +1,4 @@
-name: Build EXE
+name: Create App
 
 on:
   push:
@@ -26,5 +26,5 @@ jobs:
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: Win32-EXE
+          name: ProjectAnchorPoint
           path: build\Release\*.exe
