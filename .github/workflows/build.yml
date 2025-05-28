@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - master
-      - auto-build
   pull_request:
     branches:
       - master
-      - auto-build
 
 jobs:
   build:
