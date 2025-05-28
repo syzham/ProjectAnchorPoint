@@ -6,6 +6,7 @@
 #include "graphics/mesh.h"
 
 class MeshRenderer : public Component {
+public:
     Mesh mesh;
     Transform transform;
 

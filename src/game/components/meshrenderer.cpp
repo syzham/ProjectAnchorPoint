@@ -14,7 +14,7 @@ void MeshRenderer::Destroy() {
 }
 
 void MeshRenderer::Init(nlohmann::basic_json<> data) {
-    Transform* trans = owner->getComponent<Transform>(0);
+    Transform* trans = owner->getComponent<Transform>();
     if (trans) {
         transform = *trans;
     }

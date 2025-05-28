@@ -33,6 +33,9 @@ add_executable(ProjectAnchorPoint
         include/game/components/transform.h
         include/game/components/meshrenderer.h
         src/game/components/meshrenderer.cpp
+        include/game/components/lightcomponent.h
+        src/game/components/lightcomponent.cpp
+        src/graphics/light.cpp
 )
 
 target_link_libraries(

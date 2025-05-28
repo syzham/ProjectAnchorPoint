@@ -1,4 +1,5 @@
 #include "graphics/scene.h"
+#include <iostream>
 
 void Scene::Load(const std::string& sceneFile) {
 
@@ -27,26 +28,8 @@ void Scene::Load(const std::string& sceneFile) {
         }
     }
 
-    D3D11_BUFFER_DESC lightDesc = {};
-    lightDesc.Usage = D3D11_USAGE_DEFAULT;
-    lightDesc.ByteWidth = sizeof(Light) * lights.size();
-    lightDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    lightDesc.CPUAccessFlags = 0;
-    lightDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-    lightDesc.StructureByteStride = sizeof(Light);
 
-    D3D11_SUBRESOURCE_DATA initData = {};
-    initData.pSysMem = lights.data();
-
-    device->CreateBuffer(&lightDesc, &initData, &lightBuffer);
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-    srvDesc.Buffer.FirstElement = 0;
-    srvDesc.Buffer.NumElements = lights.size();
-
-   device->CreateShaderResourceView(lightBuffer, &srvDesc, &lightSRV);
+    Lights::Init();
 }
 
 void Scene::Draw() {
@@ -56,7 +39,7 @@ void Scene::Draw() {
         }
     }
 
-    dc->PSSetShaderResources(0, 1, &lightSRV);
+    Lights::Update();
 }
 
 void Scene::Unload() {
@@ -65,4 +48,5 @@ void Scene::Unload() {
             comp->Destroy();
         }
     }
+    Lights::Release();
 }

@@ -14,7 +14,7 @@ public:
     std::vector<std::unique_ptr<Component>> components;
 
     template<typename T>
-    T* getComponent(int instance) {
+    T* getComponent(int instance = 0) {
         for (auto& comp : components) {
             if (!comp || !comp.get()) continue;
             if (auto ret = dynamic_cast<T*>(comp.get())) {
@@ -29,9 +29,6 @@ public:
 class Scene {
 public:
     std::vector<std::unique_ptr<SceneObject>> objects;
-    std::vector<Light> lights;
-    ID3D11Buffer* lightBuffer = nullptr;
-    ID3D11ShaderResourceView* lightSRV = nullptr;
     Camera camera;
 
     void Load(const std::string& sceneFile);
