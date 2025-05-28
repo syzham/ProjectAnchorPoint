@@ -1,0 +1,30 @@
+name: Build EXE
+
+on:
+  push:
+    branches:
+      - master
+      - auto-build
+  pull_request:
+    branches:
+      - master
+      - auto-build
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build project
+        run: cmake --build build --config Release
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: Win32-EXE
+          path: build\Release\*.exe
