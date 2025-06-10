@@ -36,6 +36,41 @@ add_executable(ProjectAnchorPoint
         include/game/components/lightcomponent.h
         src/game/components/lightcomponent.cpp
         src/graphics/light.cpp
+        src/game/ScriptBehaviour.cpp
+        include/game/ScriptBehaviour.h
+        include/game/components/scriptcomponent.h
+        src/game/components/scriptcomponent.cpp
+)
+
+set(
+        DDLS
+        ${CMAKE_SOURCE_DIR}/hostfxr.dll
+        ${CMAKE_SOURCE_DIR}/nethost.dll
+)
+
+set(
+        CONFIGS
+        ${CMAKE_SOURCE_DIR}/GameScripts.runtimeconfig.json
+)
+
+add_library(ScriptExport SHARED
+        include/game/ScriptExport.h
+        src/game/ScriptExport.cpp
+        include/game/components/transform.h
+        src/game/components/transform.cpp
+)
+
+target_compile_definitions(ProjectAnchorPoint PRIVATE UNICODE _UNICODE)
+set_target_properties(ProjectAnchorPoint PROPERTIES WIN32_EXECUTABLE ON)
+
+include_directories(
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.xxxxx.x/um"
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/external/nethost/include
+)
+link_directories(
+        "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.xxxxx.x/um/x64"
+        ${PROJECT_SOURCE_DIR}/external/nethost/lib
 )
 
 target_link_libraries(
@@ -44,15 +79,9 @@ target_link_libraries(
         dxgi
         d3dcompiler
         user32
+        ${PROJECT_SOURCE_DIR}/external/nethost/lib/nethost.lib
 )
-target_compile_definitions(ProjectAnchorPoint PRIVATE UNICODE _UNICODE)
-set_target_properties(ProjectAnchorPoint PROPERTIES WIN32_EXECUTABLE ON)
 
-include_directories(
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.xxxxx.x/um"
-        ${PROJECT_SOURCE_DIR}/include
-)
-link_directories("C:/Program Files (x86)/Windows Kits/10/Lib/10.0.xxxxx.x/um/x64")
 
 add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -65,3 +94,29 @@ add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
 add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:ProjectAnchorPoint>/shaders)
+
+add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/scripts $<TARGET_FILE_DIR:ProjectAnchorPoint>/scripts)
+
+add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${DLLS}
+        ${CONFIGS}
+        $<TARGET_FILE_DIR:ProjectAnchorPoint>)
+
+add_custom_target(BuildGameScriptsDLL
+        COMMAND dotnet build ${CMAKE_SOURCE_DIR}/scripts/GameScripts -c Release -p:Platform=""
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_SOURCE_DIR}/scripts/GameScripts/bin/Release/net8.0/GameScripts.dll
+        ${CMAKE_SOURCE_DIR}/GameScripts.dll
+        BYPRODUCTS ${CMAKE_SOURCE_DIR}/GameScripts.dll
+        COMMENT "Building and copying GameScripts.dll"
+        VERBATIM
+)
+
+add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/scripts/GameScripts/bin/Release/net8.0 $<TARGET_FILE_DIR:ProjectAnchorPoint>)
+
+add_dependencies(ProjectAnchorPoint ScriptExport BuildGameScriptsDLL)

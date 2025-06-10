@@ -3,6 +3,7 @@
 
 #include "graphics/graphics.h"
 #include "game/SceneManager.h"
+#include "game/ScriptBehaviour.h"
 
 class GameEngine {
 public:

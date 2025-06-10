@@ -1,3 +1,4 @@
+#include <iostream>
 #include "game/components/meshrenderer.h"
 
 
@@ -14,22 +15,19 @@ void MeshRenderer::Destroy() {
 }
 
 void MeshRenderer::Init(nlohmann::basic_json<> data) {
-    Transform* trans = owner->getComponent<Transform>();
-    if (trans) {
-        transform = *trans;
-    }
+    transform = owner->getComponent<Transform>();
     mesh.LoadFromOBJ(data["model"], ParseTopology(data["topology"]));
     mesh.CreateVertexBuffer();
 }
 
 DirectX::XMMATRIX MeshRenderer::GetWorldMatrix() const {
 
-    DirectX::XMMATRIX trans = DirectX::XMMatrixTranslation(transform.position[0], transform.position[1], transform.position[2]);
-    DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(transform.rotation[0]);
-    DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(transform.rotation[1]);
-    DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(transform.rotation[2]);
+    DirectX::XMMATRIX trans = DirectX::XMMatrixTranslation(transform->position[0], transform->position[1], transform->position[2]);
+    DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(transform->rotation[0]);
+    DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(transform->rotation[1]);
+    DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(transform->rotation[2]);
     DirectX::XMMATRIX rot = rotZ * rotY * rotX;
-    DirectX::XMMATRIX scl = DirectX::XMMatrixScaling(transform.scale[0], transform.scale[1], transform.scale[2]);
+    DirectX::XMMATRIX scl = DirectX::XMMatrixScaling(transform->scale[0], transform->scale[1], transform->scale[2]);
     return scl * rot * trans;
 }
 

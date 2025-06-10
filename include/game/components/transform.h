@@ -16,6 +16,18 @@ public:
     void Update() override;
 
     void Destroy() override;
+
+    void SetPosition(float x, float y, float z);
+
+    void SetRotation(float x, float y, float z);
+
+    void SetScale(float x, float y, float z);
+
+    void AddPosition(float x, float y, float z);
+
+    void AddRotation(float x, float y, float z);
+
+    void AddScale(float x, float y, float z);
 };
 
 REGISTER_COMPONENT(Transform);

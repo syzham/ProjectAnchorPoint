@@ -4,11 +4,12 @@
 #include "game/components/component.h"
 #include "game/components/transform.h"
 #include "graphics/mesh.h"
+#include "graphics/camera.h"
 
 class MeshRenderer : public Component {
 public:
     Mesh mesh;
-    Transform transform;
+    Transform* transform;
 
     std::string getName() override;
 

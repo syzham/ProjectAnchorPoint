@@ -23,3 +23,39 @@ void Transform::Init(nlohmann::basic_json<> data) {
     scale[1] = data["scale"][1];
     scale[2] = data["scale"][2];
 }
+
+void Transform::SetPosition(float x, float y, float z) {
+    position[0] = x;
+    position[1] = y;
+    position[2] = z;
+}
+
+void Transform::SetRotation(float x, float y, float z) {
+    rotation[0] = x;
+    rotation[1] = y;
+    rotation[2] = z;
+}
+
+void Transform::SetScale(float x, float y, float z) {
+    scale[0] = x;
+    scale[1] = y;
+    scale[2] = z;
+}
+
+void Transform::AddPosition(float x, float y, float z) {
+    position[0] += x;
+    position[1] += y;
+    position[2] += z;
+}
+
+void Transform::AddRotation(float x, float y, float z) {
+    rotation[0] += x;
+    rotation[1] += y;
+    rotation[2] += z;
+}
+
+void Transform::AddScale(float x, float y, float z) {
+    scale[0] += x;
+    scale[1] += y;
+    scale[2] += z;
+}
