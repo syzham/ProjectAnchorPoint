@@ -96,10 +96,6 @@ add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
         ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:ProjectAnchorPoint>/shaders)
 
 add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/scripts $<TARGET_FILE_DIR:ProjectAnchorPoint>/scripts)
-
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${DLLS}
         ${CONFIGS}
