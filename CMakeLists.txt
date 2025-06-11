@@ -43,7 +43,7 @@ add_executable(ProjectAnchorPoint
 )
 
 set(
-        DDLS
+        DLLS
         ${CMAKE_SOURCE_DIR}/hostfxr.dll
         ${CMAKE_SOURCE_DIR}/nethost.dll
 )
