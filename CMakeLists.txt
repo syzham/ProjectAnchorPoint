@@ -8,6 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(ProjectAnchorPoint
+        src/main.cpp
         include/window/window.h
         src/window/window.cpp
         include/graphics/graphics.h

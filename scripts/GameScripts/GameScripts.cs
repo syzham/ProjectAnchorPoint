@@ -63,19 +63,6 @@ namespace GameScripts
             field.SetValue(script, valueVec);
         }
         
-        [UnmanagedCallersOnly (EntryPoint = "Start")]
-        public static void Start(IntPtr ptr)
-        {
-            var t = Type.GetType("GameScripts.CustomScripts.RotateCube");
-            if (t == null) return;
-            
-            var temp = Activator.CreateInstance(t);
-            ((RotateCube)temp!).transform = new Transform(ptr);
-            _scripts.Add((RotateCube)temp);
-
-
-        }
-        
         [UnmanagedCallersOnly (EntryPoint = "Update")]
         public static void Update()
         {

@@ -10,8 +10,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    const wchar_t CLASS_NAME[] = L"ProjectAnchorPoint";
+HWND Window::getHwnd() {
+    return hWnd;
+}
+
+int Window::Create(HINSTANCE hInstance, int nCmdShow, const wchar_t* title) {
+    const wchar_t CLASS_NAME[] = L"MainWindow";
 
     WNDCLASS wc = {};
     wc.lpfnWndProc   = WindowProc;
@@ -21,43 +25,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(
+    hWnd = CreateWindowEx(
             0,
             CLASS_NAME,
-            L"Project Anchor Point",
+            title,
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight,
             nullptr, nullptr, hInstance, nullptr
     );
+    cmdShow = nCmdShow;
 
-    if (hwnd == nullptr)
-        return 0;
-
-    ShowWindow(hwnd, nCmdShow);
-
-    InitD3D(hwnd);
-
-    GameEngine gameEngine;
-    gameEngine.Init();
-
-    MSG msg = {};
-    while (true) {
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT)
-                break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        if (msg.message == WM_QUIT)
-            break;
-
-        ClearFrame();
-        gameEngine.Update();
-        RenderFrame();
-    }
-
-    gameEngine.Shutdown();
-    CleanD3D();
+    if (hWnd == nullptr)
+        return -1;
 
     return 0;
+}
+
+void Window::Show() {
+    ShowWindow(hWnd, cmdShow);
 }

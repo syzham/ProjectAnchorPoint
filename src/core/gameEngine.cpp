@@ -1,22 +1,39 @@
 #include "core/gameEngine.h"
 
 
-void GameEngine::Init() {
-#ifdef _DEBUG
-    AllocConsole();
-    freopen("CONOUT$", "w", stdout);
-    freopen("CONOUT$", "w", stderr);
-#endif
+int GameEngine::Init(HINSTANCE hInstance, int nCmdShow) {
+    window.Create(hInstance, nCmdShow, L"Project Anchor Point");
+    InitD3D(window.getHwnd());
     InitHost();
     SceneManager::getInstance().loadFirstScene();
+    return 0;
 }
 
-void GameEngine::Update() {
-    UpdateScript();
-    SceneManager::getInstance().update();
+void GameEngine::Run() {
+    window.Show();
+    while (true) {
+        MSG msg = {};
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT)
+                break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        if (msg.message == WM_QUIT)
+            break;
+
+        ClearFrame();
+
+
+        UpdateScript();
+        SceneManager::getInstance().update();
+
+        RenderFrame();
+    }
 }
 
 void GameEngine::Shutdown() {
+    CleanD3D();
     CloseHost();
     SceneManager::getInstance().unloadScene();
 }
