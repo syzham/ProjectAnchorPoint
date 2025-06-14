@@ -41,6 +41,12 @@ add_executable(ProjectAnchorPoint
         include/game/ScriptBehaviour.h
         include/game/components/scriptcomponent.h
         src/game/components/scriptcomponent.cpp
+        include/window/cursor.h
+        src/window/cursor.cpp
+        include/game/components/cameracomponent.h
+        src/game/components/cameracomponent.cpp
+        include/game/InputManager.h
+        src/game/InputManager.cpp
 )
 
 set(
@@ -59,6 +65,10 @@ add_library(ScriptExport SHARED
         src/game/ScriptExport.cpp
         include/game/components/transform.h
         src/game/components/transform.cpp
+        include/game/InputManager.h
+        src/game/InputManager.cpp
+        include/core/config.h
+        src/core/config.cpp
 )
 
 target_compile_definitions(ProjectAnchorPoint PRIVATE UNICODE _UNICODE)
@@ -97,7 +107,7 @@ add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
         ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:ProjectAnchorPoint>/shaders)
 
 add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        COMMAND ${CMAKE_COMMAND} -E copy
         ${DLLS}
         ${CONFIGS}
         $<TARGET_FILE_DIR:ProjectAnchorPoint>)

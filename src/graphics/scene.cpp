@@ -1,5 +1,4 @@
 #include "graphics/scene.h"
-#include <iostream>
 
 void Scene::Load(const std::string& sceneFile) {
 

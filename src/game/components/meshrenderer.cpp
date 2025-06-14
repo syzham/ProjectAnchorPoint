@@ -1,13 +1,7 @@
-#include <iostream>
 #include "game/components/meshrenderer.h"
 
-
-std::string MeshRenderer::getName() {
-    return "MeshRenderer";
-}
-
 void MeshRenderer::Update() {
-    mesh.Draw(GetWorldMatrix());
+    mesh.Draw(GetWorldMatrix() * Camera::getMainCamera().GetViewMatrix() * Camera::getMainCamera().GetProjectionMatrix());
 }
 
 void MeshRenderer::Destroy() {

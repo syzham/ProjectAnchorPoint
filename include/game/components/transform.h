@@ -9,8 +9,6 @@ public:
     float rotation[3] = {0, 0, 0};
     float scale[3] = {0, 0, 0};
 
-    std::string getName() override;
-
     void Init(nlohmann::basic_json<> data) override;
 
     void Update() override;
@@ -25,7 +23,7 @@ public:
 
     void AddPosition(float x, float y, float z);
 
-    void AddRotation(float x, float y, float z);
+    void AddRotation(float x, float y, float z, bool yClamped=false);
 
     void AddScale(float x, float y, float z);
 };

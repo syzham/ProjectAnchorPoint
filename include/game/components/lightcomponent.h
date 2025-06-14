@@ -8,9 +8,7 @@
 class LightComponent : public Component {
 public:
     Light light;
-    Transform transform;
-
-    std::string getName() override;
+    Transform* transform;
 
     void Init(nlohmann::basic_json<> data) override;
 

@@ -17,7 +17,7 @@ public class Transform(IntPtr transformPtr)
     private static extern void AddPosition(IntPtr transform, float x, float y, float z);
     
     [DllImport("ScriptExport.dll")] 
-    private static extern void AddRotation(IntPtr transform, float x, float y, float z);
+    private static extern void AddRotation(IntPtr transform, float x, float y, float z, bool yClamped);
     
     [DllImport("ScriptExport.dll")] 
     private static extern void AddScale(IntPtr transform, float x, float y, float z);
@@ -42,9 +42,9 @@ public class Transform(IntPtr transformPtr)
         AddPosition(transformPtr, x, y, z);
     }
 
-    public void AddRotation(float x, float y, float z)
+    public void AddRotation(float x, float y, float z, bool yClamped = false)
     {
-        AddRotation(transformPtr, x, y, z);
+        AddRotation(transformPtr, x, y, z, yClamped);
     }
 
     public void AddScale(float x, float y, float z)

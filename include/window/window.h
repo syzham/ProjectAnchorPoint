@@ -1,8 +1,9 @@
 #ifndef PROJECTANCHORPOINT_WINDOW_H
 #define PROJECTANCHORPOINT_WINDOW_H
 
-#include <windows.h>
+#include <Windows.h>
 #include "core/config.h"
+#include "game/InputManager.h"
 
 class Window {
 public:

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "graphics/camera.h"
 
 DirectX::XMMATRIX Camera::GetProjectionMatrix() const {

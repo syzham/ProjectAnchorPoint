@@ -23,8 +23,6 @@ public:
     virtual void Init(nlohmann::basic_json<> data) = 0;
     virtual void Update() = 0;
     virtual void Destroy() = 0;
-    virtual std::string getName() = 0;
-
 };
 
 using ComponentCreateFunc = std::function<std::unique_ptr<Component>()>;

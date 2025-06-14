@@ -1,9 +1,5 @@
 #include "game/components/transform.h"
 
-std::string Transform::getName() {
-    return "Transform";
-}
-
 void Transform::Update() {
 }
 
@@ -48,10 +44,23 @@ void Transform::AddPosition(float x, float y, float z) {
     position[2] += z;
 }
 
-void Transform::AddRotation(float x, float y, float z) {
+void Transform::AddRotation(float x, float y, float z, bool yClamped) {
     rotation[0] += x;
     rotation[1] += y;
     rotation[2] += z;
+
+    if (rotation[0] > DirectX::XM_PI) rotation[0] -= DirectX::XM_2PI;
+    if (rotation[0] < -DirectX::XM_PI) rotation[0] += DirectX::XM_2PI;
+
+    if (rotation[1] > DirectX::XM_PI) rotation[1] -= DirectX::XM_2PI;
+    if (rotation[1] < -DirectX::XM_PI) rotation[1] += DirectX::XM_2PI;
+
+    if (rotation[2] > DirectX::XM_PI) rotation[2] -= DirectX::XM_2PI;
+    if (rotation[2] < -DirectX::XM_PI) rotation[2] += DirectX::XM_2PI;
+
+    if (yClamped) {
+        rotation[1] = std::clamp(rotation[1], -DirectX::XM_PI / 2, DirectX::XM_PI / 2);
+    }
 }
 
 void Transform::AddScale(float x, float y, float z) {

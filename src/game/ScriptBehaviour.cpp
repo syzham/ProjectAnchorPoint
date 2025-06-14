@@ -1,5 +1,4 @@
 #include "game/ScriptBehaviour.h"
-#include <iostream>
 
 using hostfxr_initialize_for_runtime_config_fn = int(*)(const wchar_t*, const hostfxr_initialize_parameters*, hostfxr_handle*);
 using hostfxr_get_runtime_delegate_fn = int(*)(hostfxr_handle, hostfxr_delegate_type, void**);
@@ -10,6 +9,7 @@ void (*update_fn)();
 void (*create_fn)(const char*);
 void (*setPointer_fn)(const char*, void*);
 void (*setVector3_fn)(const char*, float[3]);
+void (*setFloat_fn)(const char*, float);
 
 template <typename T>
 T load_function(HMODULE hmod, const char* name) {
@@ -58,6 +58,8 @@ int InitHost() {
     void* updateFunc = nullptr;
     void* setPointerFunc = nullptr;
     void* setVector3Func = nullptr;
+    void* setInputManagerFunc = nullptr;
+    void* setFloatFunc = nullptr;
 
     wchar_t fullAssemblyPath[MAX_PATH];
     GetFullPathNameW(L"GameScripts.dll", MAX_PATH, fullAssemblyPath, nullptr);
@@ -91,11 +93,31 @@ int InitHost() {
         return -1;
     }
 
+    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetInputManager", UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&setInputManagerFunc);
+    if (rc != 0 || updateFunc == nullptr) {
+        std::cerr << "Failed to load setVector3 function: " << std::hex << rc << std::endl;
+        close_fn(cxt);
+        return -1;
+    }
+
+    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetFloat", L"GameScripts.MyScript+SetFloatDelegate, GameScripts", nullptr, (void**)&setFloatFunc);
+    if (rc != 0 || updateFunc == nullptr) {
+        std::cerr << "Failed to load setVector3 function: " << std::hex << rc << std::endl;
+        close_fn(cxt);
+        return -1;
+    }
+
     std::cout << "Loaded function" << std::endl;
     create_fn = (create_entry_point)createFunc;
     update_fn = (update_entry_point)updateFunc;
     setPointer_fn = (setPointer_entry_point)setPointerFunc;
     setVector3_fn = (setVector3_entry_point)setVector3Func;
+    setFloat_fn = (setFloat_entry_point)setFloatFunc;
+
+
+    typedef void (CORECLR_DELEGATE_CALLTYPE* setInputManager_entry_point)(void*);
+    auto setInputManager_fn = (setInputManager_entry_point)setInputManagerFunc;
+    setInputManager_fn(&InputManager::getInstance());
 
     return 0;
 }

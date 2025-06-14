@@ -24,6 +24,12 @@ namespace GameScripts
             [MarshalAs(UnmanagedType.LPStr)] string variableName,
             Vector3 valueVec
         );
+        
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void SetFloatDelegate(
+            [MarshalAs(UnmanagedType.LPStr)] string variableName,
+            float value
+        );
  
 
         public static void CreateScript(string scriptName)
@@ -63,6 +69,23 @@ namespace GameScripts
             field.SetValue(script, valueVec);
         }
         
+        public static void SetFloat(string variableName, float value)
+        {
+            var script = _scripts.Last();
+            var type = script.GetType();
+            var field = type.GetField(variableName);
+            if (field == null) return;
+            
+            field.SetValue(script, value);
+        }
+        
+        [UnmanagedCallersOnly (EntryPoint = "SetInputManager")]
+        public static void SetInputManager(IntPtr inputManagerPtr)
+        {
+            
+            InputManager.inputManagerPtr = inputManagerPtr;
+        }
+        
         [UnmanagedCallersOnly (EntryPoint = "Update")]
         public static void Update()
         {
@@ -71,5 +94,6 @@ namespace GameScripts
                 script.Update();
             }
         }
+
     }
 }

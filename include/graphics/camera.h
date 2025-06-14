@@ -21,7 +21,7 @@ private:
     DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0, 1.0f, 0.0f, 0.0f);
 
     float fov = DirectX::XM_PIDIV4;
-    float aspect = 16.0f / 9.0f;
+    float aspect = 800.0f / 600.0f;
     float nearZ = 0.1f;
     float farZ = 100.0;
 };

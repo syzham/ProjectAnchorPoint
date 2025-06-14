@@ -7,6 +7,7 @@
 #include <iostream>
 #include <windows.h>
 #include "game/SceneManager.h"
+#include "game/InputManager.h"
 
 #pragma comment(lib, "nethost.lib")
 extern hostfxr_handle cxt;
@@ -17,6 +18,8 @@ typedef void (CORECLR_DELEGATE_CALLTYPE* create_entry_point)(const char*);
 extern void (*create_fn)(const char*);
 typedef void (CORECLR_DELEGATE_CALLTYPE* setPointer_entry_point)(const char*, void*);
 extern void (*setPointer_fn)(const char*, void*);
+typedef void (CORECLR_DELEGATE_CALLTYPE* setFloat_entry_point)(const char*, float);
+extern void (*setFloat_fn)(const char*, float);
 typedef void (CORECLR_DELEGATE_CALLTYPE* setVector3_entry_point)(const char*, float[3]);
 extern void (*setVector3_fn)(const char*, float[3]);
 

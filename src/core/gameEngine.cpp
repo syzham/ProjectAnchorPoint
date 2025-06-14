@@ -1,8 +1,8 @@
 #include "core/gameEngine.h"
 
-
 int GameEngine::Init(HINSTANCE hInstance, int nCmdShow) {
     window.Create(hInstance, nCmdShow, L"Project Anchor Point");
+    cursor = Cursor(window.getHwnd());
     InitD3D(window.getHwnd());
     InitHost();
     SceneManager::getInstance().loadFirstScene();
@@ -11,6 +11,8 @@ int GameEngine::Init(HINSTANCE hInstance, int nCmdShow) {
 
 void GameEngine::Run() {
     window.Show();
+    cursor.Centre();
+    cursor.Hide();
     while (true) {
         MSG msg = {};
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -27,6 +29,7 @@ void GameEngine::Run() {
 
         UpdateScript();
         SceneManager::getInstance().update();
+
 
         RenderFrame();
     }

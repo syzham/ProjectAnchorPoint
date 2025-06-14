@@ -11,8 +11,6 @@ public:
     Mesh mesh;
     Transform* transform;
 
-    std::string getName() override;
-
     void Init(nlohmann::basic_json<> data) override;
 
     void Update() override;
