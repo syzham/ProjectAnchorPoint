@@ -9,8 +9,8 @@
 #pragma comment (lib, "d3d11.lib")
 
 struct ObjectBuffer {
-    DirectX::XMMATRIX worldViewProj;
-    DirectX::XMMATRIX world;
+    DirectX::XMFLOAT4X4 worldViewProj;
+    DirectX::XMFLOAT4X4 world;
 };
 
 extern IDXGISwapChain *sc;

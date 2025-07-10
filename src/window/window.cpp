@@ -9,6 +9,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
             return 0;
         }
+        case WM_KEYDOWN: {
+            InputManager::getInstance().setKeyDown(wParam, true);;
+            return 0;
+        }
+        case WM_KEYUP: {
+            InputManager::getInstance().setKeyDown(wParam, false);;
+            return 0;
+        }
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;

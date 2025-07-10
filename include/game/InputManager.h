@@ -22,10 +22,14 @@ public:
     float getMouseDeltaX();
     float getMouseDeltaY();
 
+    void setKeyDown(int keycode, bool isDown);
+    bool isKeyDown(int keycode);
+
 private:
     InputManager() = default;
-    float dx;
-    float dy;
+    bool downKeyCodes[256] = {false};
+    float dx = 0;
+    float dy = 0;
 };
 
 #endif //PROJECTANCHORPOINT_INPUTMANAGER_H

@@ -1,7 +1,7 @@
 #include "game/components/meshrenderer.h"
 
 void MeshRenderer::Update() {
-    mesh.Draw(GetWorldMatrix() * Camera::getMainCamera().GetViewMatrix() * Camera::getMainCamera().GetProjectionMatrix());
+    mesh.Draw(GetWorldMatrix());
 }
 
 void MeshRenderer::Destroy() {

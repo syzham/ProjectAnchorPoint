@@ -26,6 +26,10 @@ public:
     void AddRotation(float x, float y, float z, bool yClamped=false);
 
     void AddScale(float x, float y, float z);
+
+    void MoveForwards(float speed);
+
+    void MoveRight(float speed);
 };
 
 REGISTER_COMPONENT(Transform);

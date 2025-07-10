@@ -21,6 +21,12 @@ public class Transform(IntPtr transformPtr)
     
     [DllImport("ScriptExport.dll")] 
     private static extern void AddScale(IntPtr transform, float x, float y, float z);
+    
+    [DllImport("ScriptExport.dll")] 
+    private static extern void MoveForwards(IntPtr transform, float speed);
+    
+    [DllImport("ScriptExport.dll")] 
+    private static extern void MoveRight(IntPtr transform, float speed);
 
     public void SetPosition(float x, float y, float z)
     {
@@ -50,5 +56,15 @@ public class Transform(IntPtr transformPtr)
     public void AddScale(float x, float y, float z)
     {
         AddScale(transformPtr, x, y, z);
+    }
+
+    public void MoveForwards(float speed)
+    {
+        MoveForwards(transformPtr, speed);
+    }
+
+    public void MoveRight(float speed)
+    {
+        MoveRight(transformPtr, speed);
     }
 }

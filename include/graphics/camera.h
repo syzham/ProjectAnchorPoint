@@ -11,13 +11,14 @@ public:
     void SetPosition(float x, float y, float z);
     void LookAt(float x, float y, float z);
     void Move(float x, float y, float z);
+    void Pan(float x, float y, float z);
 
     DirectX::XMMATRIX GetViewMatrix() const;
     DirectX::XMMATRIX GetProjectionMatrix() const;
 
 private:
     DirectX::XMVECTOR position = DirectX::XMVectorSet(0.0f, 0.0f, -3.0f, 1.0f);
-    DirectX::XMVECTOR target = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+    DirectX::XMVECTOR rotation = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
     DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0, 1.0f, 0.0f, 0.0f);
 
     float fov = DirectX::XM_PIDIV4;

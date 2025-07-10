@@ -126,8 +126,8 @@ void Mesh::Draw(DirectX::XMMATRIX worldMatrix) {
     dc->Map(objectBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
     auto* objBuffer = reinterpret_cast<ObjectBuffer*>(mapped.pData);
-    objBuffer->world = worldMatrix;
-    objBuffer->worldViewProj = worldMatrix * Camera::getMainCamera().GetViewMatrix() * Camera::getMainCamera().GetProjectionMatrix();
+    DirectX::XMStoreFloat4x4(&objBuffer->worldViewProj, DirectX::XMMatrixTranspose(worldMatrix * Camera::getMainCamera().GetViewMatrix() * Camera::getMainCamera().GetProjectionMatrix()));
+    DirectX::XMStoreFloat4x4(&objBuffer->world, DirectX::XMMatrixTranspose(worldMatrix));
 
     dc->Unmap(objectBuffer, 0);
     dc->VSSetConstantBuffers(1, 1, &objectBuffer);

@@ -6,7 +6,11 @@ DirectX::XMMATRIX Camera::GetProjectionMatrix() const {
 }
 
 DirectX::XMMATRIX Camera::GetViewMatrix() const {
-    return DirectX::XMMatrixLookAtLH(position, target, up);
+    float pitch = rotation.m128_f32[1];
+    float yaw = rotation.m128_f32[0];
+    DirectX::XMVECTOR forward = DirectX::XMVectorSet(cosf(pitch) * sinf(yaw), sinf(pitch), cosf(pitch) * cosf(yaw), 0.0f);
+    DirectX::XMVECTOR targetPosition = DirectX::XMVectorAdd(position, forward);
+    return DirectX::XMMatrixLookAtLH(position, targetPosition, up);
 }
 
 void Camera::SetPerspective(float newFov, float newAspect, float newNearZ, float newFarZ) {
@@ -17,7 +21,7 @@ void Camera::SetPerspective(float newFov, float newAspect, float newNearZ, float
 }
 
 void Camera::LookAt(float x, float y, float z) {
-    target = DirectX::XMVectorSet(x, y, z, 1);
+    rotation = DirectX::XMVectorSet(x, y, z, 1);
 }
 
 void Camera::SetPosition(float x, float y, float z) {
@@ -26,6 +30,10 @@ void Camera::SetPosition(float x, float y, float z) {
 
 void Camera::Move(float x, float y, float z) {
     position = DirectX::XMVectorAdd(position, DirectX::XMVectorSet(x, y, z, 1));
+}
+
+void Camera::Pan(float x, float y, float z) {
+    rotation = DirectX::XMVectorAdd(rotation, DirectX::XMVectorSet(x, y, z, 1));
 }
 
 Camera& Camera::getMainCamera() {

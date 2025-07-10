@@ -68,3 +68,11 @@ void Transform::AddScale(float x, float y, float z) {
     scale[1] += y;
     scale[2] += z;
 }
+
+void Transform::MoveForwards(float speed) {
+    AddPosition(sin(rotation[0]) * speed, 0, cos(rotation[0]) * speed);
+}
+
+void Transform::MoveRight(float speed) {
+    AddPosition(cos(rotation[0]) * speed, 0, -sin(rotation[0]) * speed);
+}

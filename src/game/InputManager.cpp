@@ -25,3 +25,11 @@ float InputManager::getMouseDeltaX() {
 float InputManager::getMouseDeltaY() {
     return dy;
 }
+
+void InputManager::setKeyDown(int keycode, bool isDown) {
+    downKeyCodes[keycode] = isDown;
+}
+
+bool InputManager::isKeyDown(int keycode) {
+    return downKeyCodes[keycode];
+}

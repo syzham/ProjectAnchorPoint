@@ -1,7 +1,7 @@
 cbuffer ObjectData : register(b1)
 {
-    float4x4 worldViewProj;
-    float4x4 world;
+    row_major float4x4 worldViewProj;
+    row_major float4x4 world;
 }
 
 struct VSInput {
