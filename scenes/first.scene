@@ -11,28 +11,13 @@
             "MeshRenderer": {
                 "model": "assets/models/Cube.obj",
                 "topology": "TRIANGLELIST"
-            },
-            "ScriptComponent": {
-                "Script": "RotateCube",
-                "data": [
-                    {
-                        "name": "transform",
-                        "type": "component",
-                        "value": 0
-                    },
-                    {
-                        "name": "delta",
-                        "type": "vector3",
-                        "value": [0, 0.01, 0]
-                    }
-                ]
             }
         },
         {
             "Name": "Light",
             "Transform": {
                 "position": [0.0, 0.0, 0.0],
-                "rotation": [0.0, -1.0, 1.0],
+                "rotation": [1.0, -1.0, 1.0],
                 "scale": [1.0, 1.0, 1.0]
             },
             "LightComponent": {

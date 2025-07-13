@@ -20,13 +20,13 @@ int InitHost() {
     wchar_t hostfxr_path[MAX_PATH];
     size_t size = sizeof(hostfxr_path) / sizeof(wchar_t);
     if (get_hostfxr_path(hostfxr_path, &size, nullptr) != 0) {
-        std::cerr << "Failed to find hostfxr.dll" << std::endl;
+        LogError("Failed to find hostfxr.dll");
         return -1;
     }
 
     HMODULE hmod = LoadLibraryW(hostfxr_path);
     if (!hmod) {
-        std::cerr << "Failed to load hostfxr.dll" << std::endl;
+        LogError("Failed to load hostfxr.dll");
         return -1;
     }
 
@@ -37,10 +37,9 @@ int InitHost() {
     const wchar_t* config_path = L"GameScripts.runtimeconfig.json";
     int rc = init_fn(config_path, nullptr, &cxt);
     if (rc != 0 || cxt == nullptr) {
-        std::cerr << "hostfxr_initialize_for_runtime_config failed " << rc << std::endl;
+        LogError("hostfxr_initialize_for_runtime_config failed",rc);
         return -1;
     }
-    std::cout << "Initialized .NET host" << std::endl;
 
     load_assembly_and_get_function_pointer_fn load_assembly_fn = nullptr;
     rc = get_delegate_fn(
@@ -49,7 +48,7 @@ int InitHost() {
             (void**)&load_assembly_fn
     );
     if (rc != 0 || load_assembly_fn == nullptr) {
-        std::cerr << "Failed to load assembly and get function pointer" << std::endl;
+        LogError("Failed to load assembly and get function pointer", rc);
         close_fn(cxt);
         return -1;
     }
@@ -63,51 +62,49 @@ int InitHost() {
 
     wchar_t fullAssemblyPath[MAX_PATH];
     GetFullPathNameW(L"GameScripts.dll", MAX_PATH, fullAssemblyPath, nullptr);
-    std::wcout << fullAssemblyPath << std::endl;
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"CreateScript", L"GameScripts.MyScript+CreateScriptDelegate, GameScripts", nullptr, (void**)&createFunc);
     if (rc != 0 || createFunc == nullptr) {
-        std::cerr << "Failed to load create script function: " << std::hex << rc << std::endl;
+        LogError("Failed to load create script function", rc);
         close_fn(cxt);
         return -1;
     }
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"Update", UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&updateFunc);
     if (rc != 0 || updateFunc == nullptr) {
-        std::cerr << "Failed to load update function: " << std::hex << rc << std::endl;
+        LogError("Failed to load update function", rc);
         close_fn(cxt);
         return -1;
     }
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetPointer", L"GameScripts.MyScript+SetPointerDelegate, GameScripts", nullptr, (void**)&setPointerFunc);
     if (rc != 0 || updateFunc == nullptr) {
-        std::cerr << "Failed to load setPointer function: " << std::hex << rc << std::endl;
+        LogError("Failed to load setPointer function", rc);
         close_fn(cxt);
         return -1;
     }
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetVector3", L"GameScripts.MyScript+SetVector3Delegate, GameScripts", nullptr, (void**)&setVector3Func);
     if (rc != 0 || updateFunc == nullptr) {
-        std::cerr << "Failed to load setVector3 function: " << std::hex << rc << std::endl;
+        LogError("Failed to load setVector3 function", rc);
         close_fn(cxt);
         return -1;
     }
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetInputManager", UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&setInputManagerFunc);
     if (rc != 0 || updateFunc == nullptr) {
-        std::cerr << "Failed to load setVector3 function: " << std::hex << rc << std::endl;
+        LogError("Failed to load setInputManager function", rc);
         close_fn(cxt);
         return -1;
     }
 
     rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetFloat", L"GameScripts.MyScript+SetFloatDelegate, GameScripts", nullptr, (void**)&setFloatFunc);
     if (rc != 0 || updateFunc == nullptr) {
-        std::cerr << "Failed to load setVector3 function: " << std::hex << rc << std::endl;
+        LogError("Failed to load setFloat function", rc);
         close_fn(cxt);
         return -1;
     }
 
-    std::cout << "Loaded function" << std::endl;
     create_fn = (create_entry_point)createFunc;
     update_fn = (update_entry_point)updateFunc;
     setPointer_fn = (setPointer_entry_point)setPointerFunc;

@@ -1,4 +1,5 @@
 #include "window/window.h"
+#include "core/logger.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -50,8 +51,10 @@ int Window::Create(HINSTANCE hInstance, int nCmdShow, const wchar_t* title) {
     );
     cmdShow = nCmdShow;
 
-    if (hWnd == nullptr)
+    if (hWnd == nullptr) {
+        LogError("Failed to create window");
         return -1;
+    }
 
     return 0;
 }

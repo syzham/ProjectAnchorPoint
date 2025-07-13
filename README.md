@@ -25,4 +25,4 @@ This project is meant to be a base game engine to be used in future projects
 - [ ] Add an audio system
 
 ### Misc
-- [ ] Add a logging class
+- [x] Add a logging class

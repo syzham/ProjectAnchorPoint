@@ -7,9 +7,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
 #endif
+    LogHeader("Project Anchor Point");
+
     GameEngine engine;
     if (engine.Init(hInstance, nCmdShow) != 0) {
-        std::cout << "Failed to initialize game engine" << std::endl;
+        LogError("Failed to initialize game engine");
         return -1;
     }
 

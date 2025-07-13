@@ -47,6 +47,8 @@ add_executable(ProjectAnchorPoint
         src/game/components/cameracomponent.cpp
         include/game/InputManager.h
         src/game/InputManager.cpp
+        include/core/logger.h
+        src/core/logger.cpp
 )
 
 set(

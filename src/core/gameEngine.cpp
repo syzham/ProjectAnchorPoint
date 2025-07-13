@@ -1,6 +1,7 @@
 #include "core/gameEngine.h"
 
 int GameEngine::Init(HINSTANCE hInstance, int nCmdShow) {
+    Log("Initializing game engine...");
     window.Create(hInstance, nCmdShow, L"Project Anchor Point");
     cursor = Cursor(window.getHwnd());
     InitD3D(window.getHwnd());

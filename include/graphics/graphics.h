@@ -5,6 +5,7 @@
 #include "core/config.h"
 #include "graphics/shader.h"
 #include <DirectXMath.h>
+#include "core/logger.h"
 
 #pragma comment (lib, "d3d11.lib")
 

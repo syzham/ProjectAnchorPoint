@@ -4,7 +4,6 @@
 #include <nethost.h>
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
-#include <iostream>
 #include <windows.h>
 #include "game/SceneManager.h"
 #include "game/InputManager.h"
