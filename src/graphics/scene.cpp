@@ -2,6 +2,8 @@
 
 void Scene::Load(const std::string& sceneFile) {
 
+    LogHeader("Loading Scene");
+
     std::ifstream in("scenes/" + sceneFile + ".scene");
     if (!in)
         return;
@@ -14,9 +16,11 @@ void Scene::Load(const std::string& sceneFile) {
         SceneObject* newObject = objects.back().get();
         for (const auto& component : obj.items()) {
             if (component.key() == "Name") {
+                Log(component.value().get<std::string>().c_str());
                 newObject->name = component.value();
                 continue;
             }
+            Log(component.key().c_str(), 1);
 
             std::unique_ptr<Component> newComponent = ComponentFactory::Instance().Create(component.key());
             if (newComponent) {

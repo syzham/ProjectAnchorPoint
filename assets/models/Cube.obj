@@ -1,5 +1,4 @@
-mtllib ../materials/red.mtl
-usemtl RedMaterial
+usemtl bricks
 
 v 1 -1 1
 v 1 -1 -1

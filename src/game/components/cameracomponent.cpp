@@ -7,8 +7,8 @@ void CameraComponent::Init(nlohmann::basic_json<> data) {
 
 void CameraComponent::Update(){
     if (!currentActive) return;
-    Camera::getMainCamera().SetPosition(transform->position[0], transform->position[1], transform->position[2]);
-    Camera::getMainCamera().LookAt(transform->rotation[0], transform->rotation[1], transform->rotation[2]);
+    Camera::getMainCamera().SetPosition(transform->position);
+    Camera::getMainCamera().LookAt(transform->rotation);
 }
 
 void CameraComponent::Destroy(){

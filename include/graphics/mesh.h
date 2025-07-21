@@ -11,18 +11,17 @@
 #include <WICTextureLoader11.h>
 #include "graphics/camera.h"
 #include "graphics/graphics.h"
-
-struct Coords {
-    float x, y, z;
-};
+#include "common.h"
+#include "nlohmann/json.hpp"
+using dat = nlohmann::json;
 
 struct UV {
     float u, v;
 };
 
 struct Vertex {
-    Coords pos;
-    Coords normal;
+    Vector3 pos;
+    Vector3 normal;
     UV uv;
 };
 
@@ -31,7 +30,9 @@ struct MaterialBuffer {
 };
 
 struct Material {
-    float diffuseColor[3] = {1, 1, 1};
+    Vector3 diffuseColor;
+    std::wstring vs;
+    std::wstring ps;
     std::string texture;
 };
 
@@ -39,12 +40,13 @@ struct Material {
 class Mesh {
 public:
     std::vector<Vertex> vertices;
-    Material material;
+    Material* material;
     ID3D11Buffer* vertexBuffer = nullptr;
     ID3D11Buffer* materialCBuffer = nullptr;
     ID3D11ShaderResourceView* textureSRV = nullptr;
     ID3D11SamplerState* samplerState = nullptr;
     D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    Shader shader;
 
     void LoadFromOBJ(const std::string& filename, D3D11_PRIMITIVE_TOPOLOGY top);
     void CreateVertexBuffer();
@@ -53,7 +55,7 @@ public:
 
 private:
     static std::unordered_map<std::string, Material> materials;
-    static void LoadMTL(const std::string& mtlPath);
+    static void LoadMTRL(const std::string& mtlName);
 };
 
 #endif //PROJECTANCHORPOINT_MESH_H

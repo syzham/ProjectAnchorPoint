@@ -2,16 +2,17 @@
 #define PROJECTANCHORPOINT_CAMERA_H
 
 #include <DirectXMath.h>
+#include "common.h"
 
 class Camera {
 public:
     static Camera& getMainCamera();
 
     void SetPerspective(float fov, float aspect, float nearZ, float farZ);
-    void SetPosition(float x, float y, float z);
-    void LookAt(float x, float y, float z);
-    void Move(float x, float y, float z);
-    void Pan(float x, float y, float z);
+    void SetPosition(Vector3 newPos);
+    void LookAt(Vector3 newRotation);
+    void Move(Vector3 addPos);
+    void Pan(Vector3 addRotation);
 
     DirectX::XMMATRIX GetViewMatrix() const;
     DirectX::XMMATRIX GetProjectionMatrix() const;

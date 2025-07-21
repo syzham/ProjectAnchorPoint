@@ -7,72 +7,60 @@ void Transform::Destroy() {
 }
 
 void Transform::Init(nlohmann::basic_json<> data) {
-    position[0] = data["position"][0];
-    position[1] = data["position"][1];
-    position[2] = data["position"][2];
+    position.x = data["position"][0];
+    position.y = data["position"][1];
+    position.z = data["position"][2];
 
-    rotation[0] = data["rotation"][0];
-    rotation[1] = data["rotation"][1];
-    rotation[2] = data["rotation"][2];
+    rotation.x = data["rotation"][0];
+    rotation.y = data["rotation"][1];
+    rotation.z = data["rotation"][2];
 
-    scale[0] = data["scale"][0];
-    scale[1] = data["scale"][1];
-    scale[2] = data["scale"][2];
+    scale.x = data["scale"][0];
+    scale.y = data["scale"][1];
+    scale.z = data["scale"][2];
 }
 
-void Transform::SetPosition(float x, float y, float z) {
-    position[0] = x;
-    position[1] = y;
-    position[2] = z;
+void Transform::SetPosition(Vector3 newPos) {
+    position = newPos;
 }
 
-void Transform::SetRotation(float x, float y, float z) {
-    rotation[0] = x;
-    rotation[1] = y;
-    rotation[2] = z;
+void Transform::SetRotation(Vector3 newRot) {
+    rotation = newRot;
 }
 
-void Transform::SetScale(float x, float y, float z) {
-    scale[0] = x;
-    scale[1] = y;
-    scale[2] = z;
+void Transform::SetScale(Vector3 newScale) {
+    scale = newScale;
 }
 
-void Transform::AddPosition(float x, float y, float z) {
-    position[0] += x;
-    position[1] += y;
-    position[2] += z;
+void Transform::AddPosition(Vector3 addPos) {
+    position += addPos;
 }
 
-void Transform::AddRotation(float x, float y, float z, bool yClamped) {
-    rotation[0] += x;
-    rotation[1] += y;
-    rotation[2] += z;
+void Transform::AddRotation(Vector3 addRot, bool yClamped) {
+    rotation += addRot;
 
-    if (rotation[0] > DirectX::XM_PI) rotation[0] -= DirectX::XM_2PI;
-    if (rotation[0] < -DirectX::XM_PI) rotation[0] += DirectX::XM_2PI;
+    if (rotation.x > DirectX::XM_PI) rotation.x -= DirectX::XM_2PI;
+    if (rotation.x < -DirectX::XM_PI) rotation.x += DirectX::XM_2PI;
 
-    if (rotation[1] > DirectX::XM_PI) rotation[1] -= DirectX::XM_2PI;
-    if (rotation[1] < -DirectX::XM_PI) rotation[1] += DirectX::XM_2PI;
+    if (rotation.y > DirectX::XM_PI) rotation.y -= DirectX::XM_2PI;
+    if (rotation.y < -DirectX::XM_PI) rotation.y += DirectX::XM_2PI;
 
-    if (rotation[2] > DirectX::XM_PI) rotation[2] -= DirectX::XM_2PI;
-    if (rotation[2] < -DirectX::XM_PI) rotation[2] += DirectX::XM_2PI;
+    if (rotation.z > DirectX::XM_PI) rotation.z -= DirectX::XM_2PI;
+    if (rotation.z < -DirectX::XM_PI) rotation.z += DirectX::XM_2PI;
 
     if (yClamped) {
-        rotation[1] = std::clamp(rotation[1], -DirectX::XM_PI / 2, DirectX::XM_PI / 2);
+        rotation.y = std::clamp(rotation.y, -DirectX::XM_PI / 2, DirectX::XM_PI / 2);
     }
 }
 
-void Transform::AddScale(float x, float y, float z) {
-    scale[0] += x;
-    scale[1] += y;
-    scale[2] += z;
+void Transform::AddScale(Vector3 addScale) {
+    scale += addScale;
 }
 
 void Transform::MoveForwards(float speed) {
-    AddPosition(sin(rotation[0]) * speed, 0, cos(rotation[0]) * speed);
+    AddPosition({sin(rotation.x) * speed, 0, cos(rotation.x) * speed});
 }
 
 void Transform::MoveRight(float speed) {
-    AddPosition(cos(rotation[0]) * speed, 0, -sin(rotation[0]) * speed);
+    AddPosition({cos(rotation.x) * speed, 0, -sin(rotation.x) * speed});
 }

@@ -7,7 +7,6 @@ ID3D11RenderTargetView *backBuffer = nullptr;
 ID3D11DepthStencilView *depthView = nullptr;
 ID3D11DepthStencilState *depthState = nullptr;
 ID3D11Buffer *objectBuffer = nullptr;
-Shader g_shader;
 
 void InitD3D(HWND hWnd) {
     DXGI_SWAP_CHAIN_DESC scd;
@@ -102,7 +101,6 @@ void InitGraphics() {
     dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
     device->CreateDepthStencilState(&dsDesc, &depthState);
 
-    g_shader.Load(device, L"shaders/VS.hlsl", L"shaders/PS.hlsl");
 }
 
 void ClearFrame() {
@@ -112,7 +110,6 @@ void ClearFrame() {
     dc->OMSetRenderTargets(1, &backBuffer, depthView);
     dc->OMSetDepthStencilState(depthState, 0);
 
-    g_shader.Bind(dc);
 }
 
 void RenderFrame() {
@@ -121,7 +118,6 @@ void RenderFrame() {
 
 void CleanD3D()
 {
-    g_shader.Release();
     depthView->Release();
     depthState->Release();
     sc->SetFullscreenState(FALSE, nullptr);

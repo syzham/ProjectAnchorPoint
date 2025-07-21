@@ -16,12 +16,12 @@ void MeshRenderer::Init(nlohmann::basic_json<> data) {
 
 DirectX::XMMATRIX MeshRenderer::GetWorldMatrix() const {
 
-    DirectX::XMMATRIX trans = DirectX::XMMatrixTranslation(transform->position[0], transform->position[1], transform->position[2]);
-    DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(transform->rotation[0]);
-    DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(transform->rotation[1]);
-    DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(transform->rotation[2]);
+    DirectX::XMMATRIX trans = DirectX::XMMatrixTranslation(transform->position.x, transform->position.y, transform->position.z);
+    DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(transform->rotation.x);
+    DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(transform->rotation.y);
+    DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(transform->rotation.z);
     DirectX::XMMATRIX rot = rotZ * rotY * rotX;
-    DirectX::XMMATRIX scl = DirectX::XMMatrixScaling(transform->scale[0], transform->scale[1], transform->scale[2]);
+    DirectX::XMMATRIX scl = DirectX::XMMatrixScaling(transform->scale.x, transform->scale.y, transform->scale.z);
     return scl * rot * trans;
 }
 

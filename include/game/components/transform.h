@@ -2,12 +2,13 @@
 #define PROJECTANCHORPOINT_TRANSFORM_H
 
 #include "game/components/component.h"
+#include "common.h"
 
 class Transform : public Component {
 public:
-    float position[3] = {0, 0, 0};
-    float rotation[3] = {0, 0, 0};
-    float scale[3] = {0, 0, 0};
+    Vector3 position = {0, 0, 0};
+    Vector3 rotation = {0, 0, 0};
+    Vector3 scale = {0, 0, 0};
 
     void Init(nlohmann::basic_json<> data) override;
 
@@ -15,17 +16,17 @@ public:
 
     void Destroy() override;
 
-    void SetPosition(float x, float y, float z);
+    void SetPosition(Vector3 newPos);
 
-    void SetRotation(float x, float y, float z);
+    void SetRotation(Vector3 newRot);
 
-    void SetScale(float x, float y, float z);
+    void SetScale(Vector3 newScale);
 
-    void AddPosition(float x, float y, float z);
+    void AddPosition(Vector3 addPos);
 
-    void AddRotation(float x, float y, float z, bool yClamped=false);
+    void AddRotation(Vector3 addRot, bool yClamped=false);
 
-    void AddScale(float x, float y, float z);
+    void AddScale(Vector3 addScale);
 
     void MoveForwards(float speed);
 

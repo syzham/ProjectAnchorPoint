@@ -20,20 +20,20 @@ void Camera::SetPerspective(float newFov, float newAspect, float newNearZ, float
     farZ = newFarZ;
 }
 
-void Camera::LookAt(float x, float y, float z) {
-    rotation = DirectX::XMVectorSet(x, y, z, 1);
+void Camera::LookAt(Vector3 newRotation) {
+    rotation = DirectX::XMVectorSet(newRotation.x, newRotation.y, newRotation.z, 1);
 }
 
-void Camera::SetPosition(float x, float y, float z) {
-    position = DirectX::XMVectorSet(x, y, z, 1);
+void Camera::SetPosition(Vector3 newPosition) {
+    position = DirectX::XMVectorSet(newPosition.x, newPosition.y, newPosition.z, 1);
 }
 
-void Camera::Move(float x, float y, float z) {
-    position = DirectX::XMVectorAdd(position, DirectX::XMVectorSet(x, y, z, 1));
+void Camera::Move(Vector3 addPosition) {
+    position = DirectX::XMVectorAdd(position, DirectX::XMVectorSet(addPosition.x, addPosition.y, addPosition.z, 1));
 }
 
-void Camera::Pan(float x, float y, float z) {
-    rotation = DirectX::XMVectorAdd(rotation, DirectX::XMVectorSet(x, y, z, 1));
+void Camera::Pan(Vector3 addRotation) {
+    rotation = DirectX::XMVectorAdd(rotation, DirectX::XMVectorSet(addRotation.x, addRotation.y, addRotation.z, 1));
 }
 
 Camera& Camera::getMainCamera() {

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "graphics/graphics.h"
+#include "common.h"
 
 enum LightType {
     Directional,
@@ -12,10 +13,10 @@ enum LightType {
 
 struct Light {
     LightType type;
-    float position[3];
+    Vector3 position;
     float range;
-    float direction[3];
-    float color[3];
+    Vector3 direction;
+    Vector3 color;
     float intensity;
 };
 
