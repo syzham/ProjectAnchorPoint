@@ -49,6 +49,13 @@ add_executable(ProjectAnchorPoint
         src/game/InputManager.cpp
         include/core/logger.h
         src/core/logger.cpp
+        include/game/components/colliders/aacollider.h
+        include/common.h
+        src/game/components/colliders/aacollider.cpp
+        include/game/CollisionManager.h
+        src/game/CollisionManager.cpp
+        include/game/components/colliders/collidercomponent.h
+        src/game/components/colliders/collidercomponent.cpp
 )
 
 set(

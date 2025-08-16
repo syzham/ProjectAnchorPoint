@@ -10,6 +10,14 @@ struct Vector3 {
         return Vector3(x + other.x, y + other.y, z + other.z);
     }
 
+    Vector3 operator-(const Vector3& other) const {
+        return Vector3(x - other.x, y - other.y, z - other.z);
+    }
+
+    Vector3 operator*(const float other) const {
+        return Vector3(x * other, y * other, z * other);
+    }
+
     Vector3& operator+=(const Vector3& other) {
         this->x += other.x;
         this->y += other.y;

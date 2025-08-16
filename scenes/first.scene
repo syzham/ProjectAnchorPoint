@@ -11,6 +11,28 @@
             "MeshRenderer": {
                 "model": "assets/models/Cube.obj",
                 "topology": "TRIANGLELIST"
+            },
+            "AACollider": {
+                "offset": [0.0, 0.0, 0.0],
+                "size": [2.0, 2.0, 2.0],
+                "static": true
+            }
+        },
+        {
+            "Name": "Cube 2",
+            "Transform": {
+                "position": [0.0, 5.0, 0.0],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [1.0, 1.0, 1.0]
+            },
+            "MeshRenderer": {
+                "model": "assets/models/Cube.obj",
+                "topology": "TRIANGLELIST"
+            },
+            "AACollider": {
+                "offset": [0.0, 0.0, 0.0],
+                "size": [2.0, 2.0, 2.0],
+                "static": true
             }
         },
         {
@@ -30,7 +52,7 @@
         {
             "Name": "MainPlayer",
             "Transform": {
-                "position": [0.0, 0.0, -3.0],
+                "position": [0.0, 1.7, -3.0],
                 "rotation": [0.0, 0.0, 0.0],
                 "scale": [1.0, 1.0, 1.0]
             },
@@ -51,6 +73,11 @@
                         "value": 0.001
                     }
                 ]
+            },
+            "AACollider": {
+                "offset": [0.0, 0.0, 0.0],
+                "size": [1.0, 1.7, 1.0],
+                "static": false
             }
         }
     ]
