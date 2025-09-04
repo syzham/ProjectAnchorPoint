@@ -4,6 +4,8 @@ namespace GameScripts;
 
 public class Game
 {
-    [DllImport("ScriptExport.dll")] 
-    public static extern void QuitGame(); 
+    public static float DeltaTime;
+    
+    [DllImport("ScriptExport.dll")]
+    public static extern void QuitGame();
 }

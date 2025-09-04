@@ -11,8 +11,10 @@
 #pragma comment(lib, "nethost.lib")
 extern hostfxr_handle cxt;
 extern hostfxr_close_fn close_fn;
-typedef void (CORECLR_DELEGATE_CALLTYPE* update_entry_point)();
-extern void (*update_fn)();
+typedef void (CORECLR_DELEGATE_CALLTYPE* update_entry_point)(float);
+extern void (*update_fn)(float);
+typedef void (CORECLR_DELEGATE_CALLTYPE* fixedUpdate_entry_point)();
+extern void (*fixedUpdate_fn)();
 typedef void (CORECLR_DELEGATE_CALLTYPE* create_entry_point)(const char*);
 extern void (*create_fn)(const char*);
 typedef void (CORECLR_DELEGATE_CALLTYPE* setPointer_entry_point)(const char*, void*);
@@ -22,8 +24,10 @@ extern void (*setFloat_fn)(const char*, float);
 typedef void (CORECLR_DELEGATE_CALLTYPE* setVector3_entry_point)(const char*, float[3]);
 extern void (*setVector3_fn)(const char*, float[3]);
 
+int LoadFunctions(const load_assembly_and_get_function_pointer_fn load, const char_t* fullAssemblyPath, const char_t* method, const char_t* delegate, void*& func);
 int InitHost();
-void UpdateScript();
+void UpdateScript(float deltaTime);
+void FixedUpdateScript();
 void CloseHost();
 
 #endif //PROJECTANCHORPOINT_SCRIPTBEHAVIOUR_H

@@ -3,8 +3,8 @@
 public class PlayerController : ICustomScripts
 {
     public Transform transform;
-    public float Sensitivity = 0.0001f;
-    public float speed = 0.01f;
+    public float Sensitivity = 0.1f;
+    public float speed = 9f;
 
     public void Update()
     {
@@ -15,15 +15,15 @@ public class PlayerController : ICustomScripts
             Game.QuitGame();
 
         if (InputManager.KeyDown(Key.W))
-            transform.MoveForwards(speed);
+            transform.MoveForwards(speed * Game.DeltaTime);
         
         if (InputManager.KeyDown(Key.S))
-            transform.MoveForwards(-speed);
+            transform.MoveForwards(-speed * Game.DeltaTime);
         
         if (InputManager.KeyDown(Key.A))
-            transform.MoveRight(-speed);
+            transform.MoveRight(-speed * Game.DeltaTime);
         
         if (InputManager.KeyDown(Key.D))
-            transform.MoveRight(speed);
+            transform.MoveRight(speed * Game.DeltaTime);;
     }
 }

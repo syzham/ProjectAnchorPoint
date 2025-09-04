@@ -87,13 +87,22 @@ namespace GameScripts
         }
         
         [UnmanagedCallersOnly (EntryPoint = "Update")]
-        public static void Update()
+        public static void Update(float deltaTime)
         {
+            Game.DeltaTime = deltaTime;
             foreach (var script in _scripts)
             {
                 script.Update();
             }
         }
-
+        
+        [UnmanagedCallersOnly (EntryPoint = "FixedUpdate")]
+        public static void FixedUpdate()
+        {
+            foreach (var script in _scripts)
+            {
+                script.FixedUpdate();
+            }
+        }
     }
 }

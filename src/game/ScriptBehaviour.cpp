@@ -5,7 +5,8 @@ using hostfxr_get_runtime_delegate_fn = int(*)(hostfxr_handle, hostfxr_delegate_
 using hostfxr_close_fn = int(*)(hostfxr_handle);
 hostfxr_handle cxt = nullptr;
 hostfxr_close_fn close_fn;
-void (*update_fn)();
+void (*update_fn)(float);
+void (*fixedUpdate_fn)();
 void (*create_fn)(const char*);
 void (*setPointer_fn)(const char*, void*);
 void (*setVector3_fn)(const char*, float[3]);
@@ -14,6 +15,16 @@ void (*setFloat_fn)(const char*, float);
 template <typename T>
 T load_function(HMODULE hmod, const char* name) {
     return reinterpret_cast<T>(GetProcAddress(hmod, name));
+}
+
+int LoadFunctions(const load_assembly_and_get_function_pointer_fn load, const char_t* fullAssemblyPath, const char_t* method, const char_t* delegate, void*& func) {
+    if (int rc = load(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", method, delegate, nullptr, static_cast<void**>(&func)); rc != 0 || func == nullptr) {
+        LogError("Failed to Load Function", rc);
+        close_fn(cxt);
+        return -1;
+    }
+
+    return 0;
 }
 
 int InitHost() {
@@ -53,64 +64,36 @@ int InitHost() {
         return -1;
     }
 
-    void* createFunc = nullptr;
-    void* updateFunc = nullptr;
-    void* setPointerFunc = nullptr;
-    void* setVector3Func = nullptr;
-    void* setInputManagerFunc = nullptr;
-    void* setFloatFunc = nullptr;
 
     wchar_t fullAssemblyPath[MAX_PATH];
     GetFullPathNameW(L"GameScripts.dll", MAX_PATH, fullAssemblyPath, nullptr);
 
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"CreateScript", L"GameScripts.MyScript+CreateScriptDelegate, GameScripts", nullptr, (void**)&createFunc);
-    if (rc != 0 || createFunc == nullptr) {
-        LogError("Failed to load create script function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"Update", UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&updateFunc);
-    if (rc != 0 || updateFunc == nullptr) {
-        LogError("Failed to load update function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetPointer", L"GameScripts.MyScript+SetPointerDelegate, GameScripts", nullptr, (void**)&setPointerFunc);
-    if (rc != 0 || updateFunc == nullptr) {
-        LogError("Failed to load setPointer function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetVector3", L"GameScripts.MyScript+SetVector3Delegate, GameScripts", nullptr, (void**)&setVector3Func);
-    if (rc != 0 || updateFunc == nullptr) {
-        LogError("Failed to load setVector3 function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetInputManager", UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&setInputManagerFunc);
-    if (rc != 0 || updateFunc == nullptr) {
-        LogError("Failed to load setInputManager function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
-    rc = load_assembly_fn(fullAssemblyPath, L"GameScripts.MyScript, GameScripts", L"SetFloat", L"GameScripts.MyScript+SetFloatDelegate, GameScripts", nullptr, (void**)&setFloatFunc);
-    if (rc != 0 || updateFunc == nullptr) {
-        LogError("Failed to load setFloat function", rc);
-        close_fn(cxt);
-        return -1;
-    }
-
+    void* createFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"CreateScript", L"GameScripts.MyScript+CreateScriptDelegate, GameScripts", createFunc);
     create_fn = (create_entry_point)createFunc;
+
+    void* updateFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"Update", UNMANAGEDCALLERSONLY_METHOD, updateFunc);
     update_fn = (update_entry_point)updateFunc;
+
+    void* fixedUpdateFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"FixedUpdate", UNMANAGEDCALLERSONLY_METHOD, fixedUpdateFunc);
+    fixedUpdate_fn = (fixedUpdate_entry_point)fixedUpdateFunc;
+
+    void* setPointerFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"SetPointer", L"GameScripts.MyScript+SetPointerDelegate, GameScripts", setPointerFunc);
     setPointer_fn = (setPointer_entry_point)setPointerFunc;
+
+    void* setVector3Func = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"SetVector3", L"GameScripts.MyScript+SetVector3Delegate, GameScripts", setVector3Func);
     setVector3_fn = (setVector3_entry_point)setVector3Func;
+
+    void* setFloatFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"SetFloat", L"GameScripts.MyScript+SetFloatDelegate, GameScripts", setFloatFunc);
     setFloat_fn = (setFloat_entry_point)setFloatFunc;
 
+    void* setInputManagerFunc = nullptr;
+    LoadFunctions(load_assembly_fn, fullAssemblyPath, L"SetInputManager", UNMANAGEDCALLERSONLY_METHOD, setInputManagerFunc);
 
     typedef void (CORECLR_DELEGATE_CALLTYPE* setInputManager_entry_point)(void*);
     auto setInputManager_fn = (setInputManager_entry_point)setInputManagerFunc;
@@ -119,8 +102,12 @@ int InitHost() {
     return 0;
 }
 
-void UpdateScript() {
-    update_fn();
+void UpdateScript(float deltaTime) {
+    update_fn(deltaTime);
+}
+
+void FixedUpdateScript() {
+    fixedUpdate_fn();
 }
 
 void CloseHost() {
