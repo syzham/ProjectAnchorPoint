@@ -1,26 +1,13 @@
-#ifndef PROJECTANCHORPOINT_MESHRENDERER_H
-#define PROJECTANCHORPOINT_MESHRENDERER_H
+#pragma once
 
-#include "game/components/component.h"
-#include "game/components/transform.h"
 #include "graphics/mesh.h"
+#include <d3d11.h>
+#include <string>
 
-class MeshRenderer : public Component {
-public:
+struct MeshRenderer {
     Mesh mesh;
-    Transform* transform;
+    D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    bool initialized = false;
 
-    void Init(nlohmann::basic_json<> data) override;
-
-    void Update() override;
-
-    void Destroy() override;
-
-    DirectX::XMMATRIX GetWorldMatrix() const;
-
-    D3D11_PRIMITIVE_TOPOLOGY ParseTopology(const std::string &str);
+    static D3D11_PRIMITIVE_TOPOLOGY ParseTopology(const std::string& str);
 };
-
-REGISTER_COMPONENT(MeshRenderer);
-
-#endif //PROJECTANCHORPOINT_MESHRENDERER_H

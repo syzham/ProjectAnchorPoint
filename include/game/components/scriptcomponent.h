@@ -1,21 +1,7 @@
-#ifndef PROJECTANCHORPOINT_SCRIPTCOMPONENT_H
-#define PROJECTANCHORPOINT_SCRIPTCOMPONENT_H
+#pragma once
 
-#include "game/components/component.h"
-#include "game/ScriptBehaviour.h"
+#include <string>
 
-
-class ScriptComponent : public Component {
-public:
-
-    void Init(nlohmann::basic_json<> data) override;
-
-    void Update() override;
-
-    void Destroy() override;
-
+struct ScriptComp {
+    std::string scriptClass;
 };
-
-REGISTER_COMPONENT(ScriptComponent);
-
-#endif //PROJECTANCHORPOINT_SCRIPTCOMPONENT_H

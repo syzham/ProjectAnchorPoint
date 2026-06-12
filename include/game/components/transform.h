@@ -1,38 +1,25 @@
-#ifndef PROJECTANCHORPOINT_TRANSFORM_H
-#define PROJECTANCHORPOINT_TRANSFORM_H
+#pragma once
 
-#include "game/components/component.h"
 #include "common.h"
+#include <DirectXMath.h>
+#include <cmath>
+#include <algorithm>
 
-class Transform : public Component {
-public:
-    Vector3 position = {0, 0, 0};
-    Vector3 rotation = {0, 0, 0};
-    Vector3 scale = {0, 0, 0};
+struct Transform {
+    Vector3 position = {0.0f, 0.0f, 0.0f};
+    Vector3 rotation = {0.0f, 0.0f, 0.0f};
+    Vector3 scale    = {1.0f, 1.0f, 1.0f};
 
-    void Init(nlohmann::basic_json<> data) override;
+    void SetPosition(Vector3 p) { position = p; }
+    void SetRotation(Vector3 r) { rotation = r; }
+    void SetScale(Vector3 s)    { scale = s; }
 
-    void Update() override;
+    void AddPosition(Vector3 d) { position += d; }
+    void AddScale(Vector3 d)    { scale += d; }
 
-    void Destroy() override;
-
-    void SetPosition(Vector3 newPos);
-
-    void SetRotation(Vector3 newRot);
-
-    void SetScale(Vector3 newScale);
-
-    void AddPosition(Vector3 addPos);
-
-    void AddRotation(Vector3 addRot, bool yClamped=false);
-
-    void AddScale(Vector3 addScale);
-
+    void AddRotation(Vector3 d, bool yClamped = false);
     void MoveForwards(float speed);
-
     void MoveRight(float speed);
+
+    DirectX::XMMATRIX WorldMatrix() const;
 };
-
-REGISTER_COMPONENT(Transform);
-
-#endif //PROJECTANCHORPOINT_TRANSFORM_H

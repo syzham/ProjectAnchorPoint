@@ -1,8 +1,8 @@
-#ifndef PROJECTANCHORPOINT_SCENEMANAGER_H
-#define PROJECTANCHORPOINT_SCENEMANAGER_H
+#pragma once
 
 #include "graphics/scene.h"
 #include "core/config.h"
+#include <string>
 
 class SceneManager {
 public:
@@ -16,13 +16,14 @@ public:
     SceneManager(SceneManager&&) = delete;
     SceneManager& operator=(const SceneManager&&) = delete;
 
-    Scene currentScene = {};
-    std::string sceneName = "";
+    Scene currentScene;
+    std::string sceneName;
+
     void loadFirstScene();
-    void update();
+    void update(float dt);
     void unloadScene();
+
 private:
     SceneManager() = default;
+    void addDefaultSystems();
 };
-
-#endif //PROJECTANCHORPOINT_SCENEMANAGER_H

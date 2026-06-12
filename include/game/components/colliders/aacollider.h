@@ -1,25 +1,11 @@
-#ifndef PROJECTANCHORPOINT_AACOLLIDER_H
-#define PROJECTANCHORPOINT_AACOLLIDER_H
+#pragma once
 
-#include "game/components/colliders/collidercomponent.h"
+#include "common.h"
 
-class AACollider : public ColliderComponent {
-public:
-    Vector3 max, min, size;
-
-    void Init(nlohmann::basic_json<> data) override;
-
-    void UpdatePosition() override;
-
-    void GetCoords(int &minX, int &maxX, int &minZ, int &maxZ) const override;
-
-    bool Intersects(const ColliderComponent& other) const override;
-    bool IntersectsWithAA(const AACollider& other) const override;
-
-    void ResolveOverlap(ColliderComponent& other) override;
-    void ResolveWithAA(const AACollider& other) override;
+struct AABBCollider {
+    Vector3 min    = {0.0f, 0.0f, 0.0f};
+    Vector3 max    = {0.0f, 0.0f, 0.0f};
+    Vector3 size   = {1.0f, 1.0f, 1.0f};
+    Vector3 offset = {0.0f, 0.0f, 0.0f};
+    bool isStatic  = false;
 };
-
-REGISTER_COMPONENT(AACollider);
-
-#endif //PROJECTANCHORPOINT_AACOLLIDER_H

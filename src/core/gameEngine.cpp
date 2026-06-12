@@ -19,24 +19,23 @@ void GameEngine::Run() {
     QueryPerformanceFrequency(&frequency);
     LARGE_INTEGER lastFrame{};
     QueryPerformanceCounter(&lastFrame);
-    double accum = 0;
-    double deltaTime = 0;
+    double accum     = 0.0;
+    double deltaTime = 0.0;
     constexpr double fixedDelta = 1.0 / 60.0;
 
     while (true) {
         MSG msg = {};
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT)
-                break;
+            if (msg.message == WM_QUIT) break;
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        if (msg.message == WM_QUIT)
-            break;
+        if (msg.message == WM_QUIT) break;
 
         LARGE_INTEGER currFrame{};
         QueryPerformanceCounter(&currFrame);
-        deltaTime = static_cast<double>(currFrame.QuadPart - lastFrame.QuadPart) / static_cast<double>(frequency.QuadPart);
+        deltaTime = static_cast<double>(currFrame.QuadPart - lastFrame.QuadPart)
+                  / static_cast<double>(frequency.QuadPart);
         if (deltaTime > 0.25) deltaTime = 0.25;
         accum += deltaTime;
 
@@ -47,11 +46,11 @@ void GameEngine::Run() {
             accum -= fixedDelta;
         }
 
-        UpdateScript(deltaTime);
-        SceneManager::getInstance().update();
+        // ScriptSystem calls UpdateScript internally; collision, camera, lights, and
+        // render systems run through SceneManager::update.
+        SceneManager::getInstance().update(static_cast<float>(deltaTime));
 
         lastFrame = currFrame;
-
         RenderFrame();
     }
 }
