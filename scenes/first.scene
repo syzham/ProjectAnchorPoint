@@ -4,80 +4,152 @@
         {
             "Name": "Spinny Cube",
             "Transform": {
-                "position": [0.0, 0.0, 5.0],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [1.0, 1.0, 1.0]
+                "position": [
+                    0.0,
+                    0.0,
+                    5.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
             },
             "MeshRenderer": {
                 "model": "assets/models/Cube.obj",
                 "topology": "TRIANGLELIST"
             },
-            "AACollider": {
-                "offset": [0.0, 0.0, 0.0],
-                "size": [2.0, 2.0, 2.0],
+            "AABBCollider": {
+                "offset": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    2.0,
+                    2.0,
+                    2.0
+                ],
                 "static": true
+            },
+            "Spin": {
+                "delta": [
+                    0.0,
+                    0.01,
+                    0.0
+                ]
             }
         },
         {
             "Name": "Cube 2",
             "Transform": {
-                "position": [0.0, 5.0, 0.0],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [1.0, 1.0, 1.0]
+                "position": [
+                    0.0,
+                    5.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
             },
             "MeshRenderer": {
                 "model": "assets/models/Cube.obj",
                 "topology": "TRIANGLELIST"
             },
-            "AACollider": {
-                "offset": [0.0, 0.0, 0.0],
-                "size": [2.0, 2.0, 2.0],
+            "AABBCollider": {
+                "offset": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    2.0,
+                    2.0,
+                    2.0
+                ],
                 "static": true
             }
         },
         {
             "Name": "Light",
             "Transform": {
-                "position": [0.0, 0.0, 0.0],
-                "rotation": [1.0, -1.0, 1.0],
-                "scale": [1.0, 1.0, 1.0]
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    -1.0,
+                    1.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
             },
-            "LightComponent": {
+            "Light": {
                 "lightType": 0,
                 "range": 1,
                 "intensity": 1,
-                "color": [1.0, 1.0, 1.0]
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
             }
         },
         {
             "Name": "MainPlayer",
             "Transform": {
-                "position": [0.0, 1.7, -3.0],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [1.0, 1.0, 1.0]
-            },
-            "CameraComponent": {
-                "active":  1
-            },
-            "ScriptComponent": {
-                "Script": "PlayerController",
-                "data": [
-                    {
-                        "name": "transform",
-                        "type": "component",
-                        "value": 0
-                    },
-                    {
-                        "name": "Sensitivity",
-                        "type": "float",
-                        "value": 0.0001
-                    }
+                "position": [
+                    0.0,
+                    1.7,
+                    -3.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
                 ]
             },
-            "AACollider": {
-                "offset": [0.0, 0.0, 0.0],
-                "size": [1.0, 1.7, 1.0],
+            "AABBCollider": {
+                "offset": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    1.0,
+                    1.7,
+                    1.0
+                ],
                 "static": false
+            },
+            "Camera": {
+                "active": 1
+            },
+            "PlayerController": {
+                "sensitivity": 0.0001,
+                "speed": 9.0
             }
         }
     ]
