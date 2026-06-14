@@ -17,11 +17,19 @@ data) and systems (behaviour).
   systems and components in C++ and register scene loaders for their own
   component types.
 - **Cross-platform core** — the ECS, math, scene loading, input, collision and
-  the main loop are platform-independent (built and tested on Linux and
-  Windows). Windowing and rendering sit behind `ap::Window` / `ap::Renderer`
-  interfaces with a Direct3D 11 backend on Windows and a headless null backend
-  everywhere (useful for servers, tests and CI). OpenGL/Vulkan/Metal backends
-  can be plugged in by implementing the `ap::Renderer` interface.
+  the main loop are platform-independent. Windowing and rendering sit behind
+  `ap::Window` / `ap::Renderer` interfaces with these backends:
+
+  | Platform | Window | Renderer |
+  |---|---|---|
+  | Windows | Win32 | Direct3D 11 |
+  | macOS | Cocoa (AppKit) | Metal |
+  | any (headless) | null | null |
+
+  The headless null backend (no window, no GPU) is used for servers, tests and
+  CI, and is the fallback on platforms without a native backend yet. Linux
+  windowed rendering (OpenGL/Vulkan) can be added by implementing the same two
+  interfaces.
 
 ## Building the library
 
@@ -108,6 +116,14 @@ The engine appends its `CollisionSystem` and `RenderSystem` during
 `Engine::Init()`, so gameplay systems added before `Init()` run first each
 frame and the frame is rendered last.
 
+### Shaders
+
+The Windows/D3D11 backend compiles the HLSL in `shaders/` (`VS.hlsl` /
+`PS.hlsl`, referenced from `.mtrl` material files) at runtime. The macOS/Metal
+backend compiles `shaders/Shader.metal` (an MSL port of the same lighting) at
+runtime. Ship the `shaders/` directory alongside your executable for whichever
+platform you target.
+
 ### Headless mode
 
 Set `EngineConfig::headless = true` (the sandbox accepts
@@ -122,6 +138,8 @@ include/anchorpoint/   public headers (ECS, math, components, systems, platform 
 src/                   library implementation
 src/platform/win32     Win32 window backend          (Windows only)
 src/platform/d3d11     Direct3D 11 renderer backend  (Windows only)
+src/platform/cocoa     Cocoa window backend          (macOS only)
+src/platform/metal     Metal renderer backend        (macOS only)
 src/platform/null      headless window/renderer backend
 examples/sandbox/      demo game using the library
 assets/, scenes/,      demo content used by the sandbox
@@ -130,7 +148,7 @@ shaders/
 
 ## To Do
 
-- [ ] OpenGL or Vulkan renderer backend for Linux/macOS windowed rendering
+- [ ] OpenGL or Vulkan renderer backend for Linux windowed rendering
 - [ ] Physics component
 - [ ] Resolution changes at runtime
 - [ ] View-frustum / occlusion / back-face culling

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -28,7 +28,7 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Smoke test (headless sandbox)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: ./build/examples/sandbox/sandbox --headless --frames 120
 
       - name: Install SDK layout

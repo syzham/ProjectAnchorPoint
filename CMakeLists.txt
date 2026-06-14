@@ -31,6 +31,16 @@ if(WIN32)
             src/platform/d3d11/d3d11_renderer.cpp
             src/platform/d3d11/WICTextureLoader11.cpp
     )
+elseif(APPLE)
+    enable_language(OBJCXX)
+    set(ANCHORPOINT_OBJCXX_SOURCES
+            src/platform/cocoa/cocoa_window.mm
+            src/platform/metal/metal_renderer.mm
+    )
+    # The Objective-C++ backends rely on ARC for memory management.
+    set_source_files_properties(${ANCHORPOINT_OBJCXX_SOURCES}
+            PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    list(APPEND ANCHORPOINT_SOURCES ${ANCHORPOINT_OBJCXX_SOURCES})
 endif()
 
 if(ANCHORPOINT_BUILD_SHARED)
@@ -59,6 +69,14 @@ set_target_properties(anchorpoint PROPERTIES
 if(WIN32)
     target_compile_definitions(anchorpoint PRIVATE UNICODE _UNICODE NOMINMAX)
     target_link_libraries(anchorpoint PRIVATE d3d11 dxgi d3dcompiler user32)
+elseif(APPLE)
+    target_link_libraries(anchorpoint PRIVATE
+            "-framework Cocoa"
+            "-framework Metal"
+            "-framework MetalKit"
+            "-framework QuartzCore"
+            "-framework CoreGraphics"
+            "-framework Foundation")
 endif()
 
 if(MSVC)
