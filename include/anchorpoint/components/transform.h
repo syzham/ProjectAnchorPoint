@@ -27,8 +27,13 @@ inline void AddRotation(Transform& transform, Vector3 delta, bool pitchClamped =
     wrap(transform.rotation.y);
     wrap(transform.rotation.z);
 
-    if (pitchClamped)
-        transform.rotation.y = std::clamp(transform.rotation.y, -kPiDiv2, kPiDiv2);
+    if (pitchClamped) {
+        // Stop just short of straight up/down: at exactly +/-pi/2 the forward
+        // vector aligns with the camera's up vector and the look-at matrix
+        // becomes singular, making the view snap/spin at the zenith.
+        constexpr float kMaxPitch = kPiDiv2 - 0.01f;
+        transform.rotation.y = std::clamp(transform.rotation.y, -kMaxPitch, kMaxPitch);
+    }
 }
 
 inline void MoveForwards(Transform& transform, float distance) {
