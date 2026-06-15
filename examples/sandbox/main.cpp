@@ -65,6 +65,20 @@ public:
     }
 };
 
+// Toggles the collider wireframe overlay when B is pressed. Edge-detected so a
+// held key flips it once rather than every frame.
+class DebugToggleSystem : public ap::System {
+public:
+    void OnUpdate(ap::Engine& engine) override {
+        const bool down = engine.GetInput().IsKeyDown(ap::Key::B);
+        if (down && !wasDown)
+            engine.SetDebugDrawColliders(!engine.IsDebugDrawColliders());
+        wasDown = down;
+    }
+private:
+    bool wasDown = false;
+};
+
 int main(int argc, char** argv) {
     ap::EngineConfig config;
     config.title = "Project Anchor Point";
@@ -75,6 +89,8 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--headless") == 0)
             config.headless = true;
+        else if (std::strcmp(argv[i], "--debug-colliders") == 0)
+            config.debugDrawColliders = true;
         else if (std::strcmp(argv[i], "--frames") == 0 && i + 1 < argc)
             config.maxFrames = std::stoull(argv[++i]);
     }
@@ -103,6 +119,7 @@ int main(int argc, char** argv) {
     // systems because they are added before Init().
     engine.AddSystem<PlayerControllerSystem>();
     engine.AddSystem<SpinSystem>();
+    engine.AddSystem<DebugToggleSystem>();  // press B to toggle collider outlines
 
     if (engine.Init() != 0) {
         ap::LogError("Failed to initialize engine");

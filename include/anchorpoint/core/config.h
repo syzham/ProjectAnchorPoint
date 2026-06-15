@@ -17,6 +17,10 @@ struct EngineConfig {
     // Centre and hide the cursor for FPS-style mouse-look input.
     bool captureCursor = true;
 
+    // Draw wireframe outlines for every AABBCollider (green = static,
+    // red = dynamic). Can also be toggled at runtime via Engine.
+    bool debugDrawColliders = false;
+
     // Run without a window or GPU (servers, tests, CI). Uses the null
     // platform backend on every OS.
     bool headless = false;

@@ -59,19 +59,23 @@ struct MetalRenderer::Impl {
     id<MTLCommandQueue> commandQueue = nil;
     CAMetalLayer* layer = nil;
     id<MTLRenderPipelineState> pipeline = nil;
+    id<MTLRenderPipelineState> debugPipeline = nil;
     id<MTLDepthStencilState> depthState = nil;
     id<MTLTexture> depthTexture = nil;
     id<MTLSamplerState> sampler = nil;
     id<MTLTexture> whiteTexture = nil;
     id<MTLBuffer> lightBuffer = nil;
     NSUInteger lightCapacity = 0;
+    id<MTLBuffer> debugVertexBuffer = nil;
+    NSUInteger debugVertexCapacity = 0;
 
     std::unordered_map<MeshHandle, MeshResource> meshes;
     MeshHandle nextHandle = 1;
     int width = 0;
     int height = 0;
 
-    bool BuildPipeline();
+    bool BuildPipeline(id<MTLLibrary> library);
+    bool BuildDebugPipeline(id<MTLLibrary> library);
     void EnsureDepthTexture(NSUInteger w, NSUInteger h);
     id<MTLTexture> MakeWhiteTexture();
 };
@@ -88,22 +92,8 @@ std::string ReadFile(const std::string& path) {
 
 } // namespace
 
-bool MetalRenderer::Impl::BuildPipeline() {
-    const std::string source = ReadFile("shaders/Shader.metal");
-    if (source.empty()) {
-        LogError("Failed to read shaders/Shader.metal");
-        return false;
-    }
-
+bool MetalRenderer::Impl::BuildPipeline(id<MTLLibrary> library) {
     NSError* error = nil;
-    id<MTLLibrary> library = [device newLibraryWithSource:@(source.c_str())
-                                                  options:nil
-                                                    error:&error];
-    if (library == nil) {
-        LogError(error ? error.localizedDescription.UTF8String : "Failed to compile Metal library");
-        return false;
-    }
-
     id<MTLFunction> vertexFn = [library newFunctionWithName:@"vertex_main"];
     id<MTLFunction> fragmentFn = [library newFunctionWithName:@"fragment_main"];
 
@@ -146,6 +136,39 @@ bool MetalRenderer::Impl::BuildPipeline() {
     sampDesc.tAddressMode = MTLSamplerAddressModeRepeat;
     sampler = [device newSamplerStateWithDescriptor:sampDesc];
 
+    return true;
+}
+
+bool MetalRenderer::Impl::BuildDebugPipeline(id<MTLLibrary> library) {
+    id<MTLFunction> vertexFn = [library newFunctionWithName:@"debug_vertex_main"];
+    id<MTLFunction> fragmentFn = [library newFunctionWithName:@"debug_fragment_main"];
+    if (vertexFn == nil || fragmentFn == nil)
+        return false;
+
+    // Debug vertex layout mirrors ap::DebugVertex: pos(float3), color(float3).
+    MTLVertexDescriptor* vertexDesc = [[MTLVertexDescriptor alloc] init];
+    vertexDesc.attributes[0].format = MTLVertexFormatFloat3;
+    vertexDesc.attributes[0].offset = 0;
+    vertexDesc.attributes[0].bufferIndex = 0;
+    vertexDesc.attributes[1].format = MTLVertexFormatFloat3;
+    vertexDesc.attributes[1].offset = sizeof(float) * 3;
+    vertexDesc.attributes[1].bufferIndex = 0;
+    vertexDesc.layouts[0].stride = sizeof(float) * 6;
+
+    MTLRenderPipelineDescriptor* desc = [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction = vertexFn;
+    desc.fragmentFunction = fragmentFn;
+    desc.vertexDescriptor = vertexDesc;
+    desc.inputPrimitiveTopology = MTLPrimitiveTopologyClassLine;
+    desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+    desc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+    NSError* error = nil;
+    debugPipeline = [device newRenderPipelineStateWithDescriptor:desc error:&error];
+    if (debugPipeline == nil) {
+        LogError(error ? error.localizedDescription.UTF8String : "Failed to create debug pipeline");
+        return false;
+    }
     return true;
 }
 
@@ -209,8 +232,24 @@ bool MetalRenderer::Init(Window& window, const EngineConfig& config) {
         view.layer = impl->layer;
         view.wantsLayer = YES;
 
-        if (!impl->BuildPipeline())
+        const std::string source = ReadFile("shaders/Shader.metal");
+        if (source.empty()) {
+            LogError("Failed to read shaders/Shader.metal");
             return false;
+        }
+        NSError* libError = nil;
+        id<MTLLibrary> library = [impl->device newLibraryWithSource:@(source.c_str())
+                                                            options:nil
+                                                              error:&libError];
+        if (library == nil) {
+            LogError(libError ? libError.localizedDescription.UTF8String : "Failed to compile Metal library");
+            return false;
+        }
+
+        if (!impl->BuildPipeline(library))
+            return false;
+        if (!impl->BuildDebugPipeline(library))
+            LogError("Debug collider overlay unavailable (failed to build debug pipeline)");
 
         impl->whiteTexture = impl->MakeWhiteTexture();
         impl->EnsureDepthTexture(impl->layer.drawableSize.width,
@@ -322,6 +361,24 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
             [encoder drawPrimitives:mesh.topology vertexStart:0 vertexCount:mesh.vertexCount];
         }
 
+        if (!frame.debugLines.empty() && impl->debugPipeline != nil) {
+            const NSUInteger byteCount = frame.debugLines.size() * sizeof(DebugVertex);
+            if (frame.debugLines.size() > impl->debugVertexCapacity) {
+                impl->debugVertexBuffer = [impl->device newBufferWithLength:byteCount
+                                                                    options:MTLResourceStorageModeShared];
+                impl->debugVertexCapacity = frame.debugLines.size();
+            }
+            std::memcpy(impl->debugVertexBuffer.contents, frame.debugLines.data(), byteCount);
+
+            simd_float4x4 viewProjSimd = ToSimd(viewProj);
+            [encoder setRenderPipelineState:impl->debugPipeline];
+            [encoder setVertexBuffer:impl->debugVertexBuffer offset:0 atIndex:0];
+            [encoder setVertexBytes:&viewProjSimd length:sizeof(viewProjSimd) atIndex:1];
+            [encoder drawPrimitives:MTLPrimitiveTypeLine
+                        vertexStart:0
+                        vertexCount:frame.debugLines.size()];
+        }
+
         [encoder endEncoding];
         [commandBuffer presentDrawable:drawable];
         [commandBuffer commit];
@@ -333,10 +390,12 @@ void MetalRenderer::Shutdown() {
     // mesh table drops their references now.
     impl->meshes.clear();
     impl->lightBuffer = nil;
+    impl->debugVertexBuffer = nil;
     impl->depthTexture = nil;
     impl->whiteTexture = nil;
     impl->sampler = nil;
     impl->depthState = nil;
+    impl->debugPipeline = nil;
     impl->pipeline = nil;
     impl->layer = nil;
     impl->commandQueue = nil;

@@ -75,3 +75,27 @@ fragment float4 fragment_main(VSOut in [[stage_in]],
 
     return float4(result * diffuseColor.rgb, 1.0) * tex.sample(samp, in.uv);
 }
+
+// --- Debug line rendering (collider outlines) ---
+
+struct DebugVSIn {
+    float3 position [[attribute(0)]];
+    float3 color    [[attribute(1)]];
+};
+
+struct DebugVSOut {
+    float4 position [[position]];
+    float3 color;
+};
+
+vertex DebugVSOut debug_vertex_main(DebugVSIn in [[stage_in]],
+                                    constant float4x4& viewProj [[buffer(1)]]) {
+    DebugVSOut out;
+    out.position = viewProj * float4(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+fragment float4 debug_fragment_main(DebugVSOut in [[stage_in]]) {
+    return float4(in.color, 1.0);
+}

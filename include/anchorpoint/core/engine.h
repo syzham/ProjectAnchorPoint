@@ -61,6 +61,11 @@ public:
     void LoadScene(const std::string& name);
     void UnloadScene();
 
+    // Wireframe collider overlay; initialised from EngineConfig and
+    // toggleable at runtime (e.g. bound to a key in a debug build).
+    void SetDebugDrawColliders(bool enabled) { debugDrawColliders = enabled; }
+    bool IsDebugDrawColliders() const { return debugDrawColliders; }
+
     World& GetWorld() { return world; }
     Input& GetInput() { return input; }
     const Time& GetTime() const { return time; }
@@ -84,6 +89,7 @@ private:
 
     bool initialized = false;
     bool quitRequested = false;
+    bool debugDrawColliders = false;
 };
 
 } // namespace ap

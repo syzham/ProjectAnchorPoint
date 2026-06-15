@@ -23,6 +23,7 @@ Vector3 ReadVector3(const SceneLoader::json& data) {
 
 Engine::Engine(EngineConfig engineConfig) : config(std::move(engineConfig)) {
     time.fixedDelta = config.fixedDelta;
+    debugDrawColliders = config.debugDrawColliders;
 }
 
 Engine::~Engine() {

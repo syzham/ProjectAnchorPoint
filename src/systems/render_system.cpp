@@ -1,6 +1,7 @@
 #include "anchorpoint/systems/render_system.h"
 
 #include "anchorpoint/components/camera.h"
+#include "anchorpoint/components/collider.h"
 #include "anchorpoint/components/light.h"
 #include "anchorpoint/components/mesh_renderer.h"
 #include "anchorpoint/components/transform.h"
@@ -66,6 +67,20 @@ void RenderSystem::OnUpdate(Engine& engine) {
         if (meshRenderer.gpuMesh != kInvalidMesh)
             frame.items.push_back({meshRenderer.gpuMesh, WorldMatrix(transform)});
     });
+
+    if (engine.IsDebugDrawColliders()) {
+        const Vector3 staticColor = {0, 1, 0};
+        const Vector3 dynamicColor = {1, 0, 0};
+        world.Each<Transform, AABBCollider>([&](Entity, Transform& transform, AABBCollider& collider) {
+            // Recompute the bounds here so the overlay is correct regardless of
+            // whether the collision system has run this frame.
+            const Vector3 center = transform.position + collider.offset;
+            const Vector3 min = center + collider.size * -0.5f;
+            const Vector3 max = center + collider.size * 0.5f;
+            AppendAABBWireframe(frame.debugLines, min, max,
+                                collider.isStatic ? staticColor : dynamicColor);
+        });
+    }
 
     renderer.RenderFrame(frame);
 }

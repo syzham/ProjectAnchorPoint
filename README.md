@@ -119,10 +119,33 @@ frame and the frame is rendered last.
 ### Shaders
 
 The Windows/D3D11 backend compiles the HLSL in `shaders/` (`VS.hlsl` /
-`PS.hlsl`, referenced from `.mtrl` material files) at runtime. The macOS/Metal
-backend compiles `shaders/Shader.metal` (an MSL port of the same lighting) at
-runtime. Ship the `shaders/` directory alongside your executable for whichever
-platform you target.
+`PS.hlsl`, referenced from `.mtrl` material files, plus `DebugVS.hlsl` /
+`DebugPS.hlsl` for the collider overlay) at runtime. The macOS/Metal backend
+compiles `shaders/Shader.metal` (an MSL port of the same lighting plus the
+debug line shaders) at runtime. Ship the `shaders/` directory alongside your
+executable for whichever platform you target.
+
+### Debug collider overlay
+
+A debug mode draws a wireframe box around every `AABBCollider` — green for
+static colliders, red for dynamic ones — so you can see collision volumes
+against the rendered meshes. Enable it from `EngineConfig`:
+
+```cpp
+config.debugDrawColliders = true;
+```
+
+or toggle it at runtime:
+
+```cpp
+engine.SetDebugDrawColliders(!engine.IsDebugDrawColliders());
+```
+
+The sandbox binds this to the **B** key (and accepts `--debug-colliders` to
+start with it on). The overlay is rendered by the built-in `RenderSystem`, so
+it works on both the D3D11 and Metal backends; the headless backend ignores
+it. To visualise your own volumes, push lines into `FrameData::debugLines`
+(see `ap::AppendAABBWireframe`).
 
 ### Headless mode
 

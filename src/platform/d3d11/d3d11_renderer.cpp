@@ -1,5 +1,6 @@
 #include "d3d11_renderer.h"
 
+#include <cstring>
 #include <d3dcompiler.h>
 
 #include "WICTextureLoader11.h"
@@ -124,7 +125,51 @@ bool D3D11Renderer::Init(Window& window, const EngineConfig& config) {
     dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
     device->CreateDepthStencilState(&dsDesc, &depthState);
 
+    if (!LoadDebugShader())
+        LogError("Debug collider overlay unavailable (failed to load debug shaders)");
+
     return true;
+}
+
+bool D3D11Renderer::LoadDebugShader() {
+    ID3DBlob* vsBlob = nullptr;
+    ID3DBlob* psBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
+
+    HRESULT hr = D3DCompileFromFile(L"shaders/DebugVS.hlsl", nullptr, nullptr,
+                                    "main", "vs_5_0", 0, 0, &vsBlob, &errorBlob);
+    if (FAILED(hr)) {
+        if (errorBlob) {
+            LogError(static_cast<const char*>(errorBlob->GetBufferPointer()));
+            errorBlob->Release();
+        }
+        return false;
+    }
+
+    hr = D3DCompileFromFile(L"shaders/DebugPS.hlsl", nullptr, nullptr,
+                            "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
+    if (FAILED(hr)) {
+        if (errorBlob) {
+            LogError(static_cast<const char*>(errorBlob->GetBufferPointer()));
+            errorBlob->Release();
+        }
+        vsBlob->Release();
+        return false;
+    }
+
+    device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &debugShader.vertexShader);
+    device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &debugShader.pixelShader);
+
+    const D3D11_INPUT_ELEMENT_DESC layout[] = {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    };
+
+    hr = device->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(),
+                                   vsBlob->GetBufferSize(), &debugShader.inputLayout);
+    vsBlob->Release();
+    psBlob->Release();
+    return SUCCEEDED(hr);
 }
 
 bool D3D11Renderer::LoadShader(const std::wstring& vsPath, const std::wstring& psPath,
@@ -298,7 +343,50 @@ void D3D11Renderer::RenderFrame(const FrameData& frame) {
         context->Draw(mesh.vertexCount, 0);
     }
 
+    if (!frame.debugLines.empty())
+        DrawDebugLines(frame.debugLines, viewProj);
+
     swapChain->Present(0, 0);
+}
+
+void D3D11Renderer::DrawDebugLines(const std::vector<DebugVertex>& lines, const Matrix4& viewProj) {
+    if (debugShader.vertexShader == nullptr) return;
+
+    // Grow the dynamic vertex buffer to fit this frame's lines.
+    if (lines.size() > debugVertexCapacity) {
+        SafeRelease(debugVertexBuffer);
+        D3D11_BUFFER_DESC desc = {};
+        desc.Usage = D3D11_USAGE_DYNAMIC;
+        desc.ByteWidth = static_cast<UINT>(sizeof(DebugVertex) * lines.size());
+        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        device->CreateBuffer(&desc, nullptr, &debugVertexBuffer);
+        debugVertexCapacity = lines.size();
+    }
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    context->Map(debugVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    std::memcpy(mapped.pData, lines.data(), sizeof(DebugVertex) * lines.size());
+    context->Unmap(debugVertexBuffer, 0);
+
+    // Lines are already in world space, so the model matrix is identity.
+    D3D11_MAPPED_SUBRESOURCE objMapped = {};
+    context->Map(objectBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &objMapped);
+    auto* objBuffer = static_cast<ObjectBuffer*>(objMapped.pData);
+    StoreTransposed(viewProj, objBuffer->worldViewProj);
+    StoreTransposed(Matrix4::Identity(), objBuffer->world);
+    context->Unmap(objectBuffer, 0);
+    context->VSSetConstantBuffers(1, 1, &objectBuffer);
+
+    UINT stride = sizeof(DebugVertex);
+    UINT offset = 0;
+    context->IASetVertexBuffers(0, 1, &debugVertexBuffer, &stride, &offset);
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    context->IASetInputLayout(debugShader.inputLayout);
+    context->VSSetShader(debugShader.vertexShader, nullptr, 0);
+    context->PSSetShader(debugShader.pixelShader, nullptr, 0);
+
+    context->Draw(static_cast<UINT>(lines.size()), 0);
 }
 
 void D3D11Renderer::ReleaseShader(ShaderProgram& shader) {
@@ -320,6 +408,8 @@ void D3D11Renderer::Shutdown() {
         ReleaseMesh(mesh);
     meshes.clear();
 
+    SafeRelease(debugVertexBuffer);
+    ReleaseShader(debugShader);
     SafeRelease(lightSRV);
     SafeRelease(lightBuffer);
     SafeRelease(objectBuffer);

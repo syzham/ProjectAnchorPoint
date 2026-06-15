@@ -37,9 +37,11 @@ private:
     };
 
     bool LoadShader(const std::wstring& vsPath, const std::wstring& psPath, ShaderProgram& out);
+    bool LoadDebugShader();
     void ReleaseShader(ShaderProgram& shader);
     void ReleaseMesh(MeshResource& mesh);
     void UpdateLightBuffer(const std::vector<GpuLight>& lights);
+    void DrawDebugLines(const std::vector<DebugVertex>& lines, const Matrix4& viewProj);
 
     IDXGISwapChain* swapChain = nullptr;
     ID3D11Device* device = nullptr;
@@ -52,6 +54,10 @@ private:
     ID3D11Buffer* lightBuffer = nullptr;
     ID3D11ShaderResourceView* lightSRV = nullptr;
     std::size_t lightCapacity = 0;
+
+    ShaderProgram debugShader;
+    ID3D11Buffer* debugVertexBuffer = nullptr;
+    std::size_t debugVertexCapacity = 0;
 
     std::unordered_map<MeshHandle, MeshResource> meshes;
     MeshHandle nextHandle = 1;

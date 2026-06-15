@@ -32,6 +32,13 @@ struct DrawItem {
     Matrix4 world;
 };
 
+// A single vertex of a debug line list (world-space position + RGB colour),
+// drawn unlit and untextured. Two consecutive vertices form one segment.
+struct DebugVertex {
+    Vector3 position;
+    Vector3 color;
+};
+
 // Everything a backend needs to draw one frame, gathered by the
 // RenderSystem from the World each frame.
 struct FrameData {
@@ -40,7 +47,31 @@ struct FrameData {
     float clearColor[4] = {0, 0, 0, 1};
     std::vector<GpuLight> lights;
     std::vector<DrawItem> items;
+    std::vector<DebugVertex> debugLines;
 };
+
+// Appends the 12 edges (24 vertices) of an axis-aligned box to a debug line
+// list. Reusable for any debug visualisation, not just colliders.
+inline void AppendAABBWireframe(std::vector<DebugVertex>& out,
+                                const Vector3& min, const Vector3& max,
+                                const Vector3& color) {
+    const Vector3 corners[8] = {
+        {min.x, min.y, min.z}, {max.x, min.y, min.z},
+        {max.x, min.y, max.z}, {min.x, min.y, max.z},
+        {min.x, max.y, min.z}, {max.x, max.y, min.z},
+        {max.x, max.y, max.z}, {min.x, max.y, max.z},
+    };
+    // Bottom face, top face, then the four vertical edges.
+    const int edges[12][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7},
+    };
+    for (const auto& edge : edges) {
+        out.push_back({corners[edge[0]], color});
+        out.push_back({corners[edge[1]], color});
+    }
+}
 
 // Abstract rendering backend. The library ships a Direct3D 11 backend on
 // Windows and a null backend for headless use; implement this interface to
