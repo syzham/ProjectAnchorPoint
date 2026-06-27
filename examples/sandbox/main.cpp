@@ -1,91 +1,33 @@
 // Sandbox: an example game built on the AnchorPoint engine library.
 //
-// Demonstrates the pure-ECS workflow: the game defines its own plain-data
-// components (PlayerController, Spin), registers scene loaders for them, and
-// implements behaviour in C++ systems.
+// Gameplay is organised into folders so this file stays a readable description
+// of the game rather than its implementation:
+//
+//   components/  plain-data components (+ their scene loaders)
+//   systems/     behaviour, one System per file
+//   game/        the game-state machine (GameState + StateSystem)
+//
+// Systems declare which game state they run in by deriving from StateSystem
+// (see game/state_system.h); the active state is just a singleton component in
+// the World, so state handling stays pure-ECS.
 
 #include <cstring>
 #include <string>
 
 #include <anchorpoint/anchorpoint.h>
 
-using json = ap::SceneLoader::json;
-
-// --- Custom components (plain data) ---
-
-struct PlayerController {
-    float sensitivity = 0.001f;
-    float speed = 9.0f;
-};
-
-struct Spin {
-    ap::Vector3 delta;
-};
-
-// --- Custom systems (behaviour) ---
-
-class PlayerControllerSystem : public ap::System {
-public:
-    void OnUpdate(ap::Engine& engine) override {
-        auto& input = engine.GetInput();
-        const float deltaTime = engine.GetTime().deltaTime;
-
-        if (input.IsKeyDown(ap::Key::Escape)) {
-            engine.Quit();
-            return;
-        }
-
-        engine.GetWorld().Each<ap::Transform, PlayerController>(
-            [&](ap::Entity, ap::Transform& transform, PlayerController& player) {
-                ap::AddRotation(transform,
-                                {input.GetMouseDeltaX() * player.sensitivity,
-                                 -input.GetMouseDeltaY() * player.sensitivity,
-                                 0},
-                                true);
-
-                if (input.IsKeyDown(ap::Key::W))
-                    ap::MoveForwards(transform, player.speed * deltaTime);
-                if (input.IsKeyDown(ap::Key::S))
-                    ap::MoveForwards(transform, -player.speed * deltaTime);
-                if (input.IsKeyDown(ap::Key::A))
-                    ap::MoveRight(transform, -player.speed * deltaTime);
-                if (input.IsKeyDown(ap::Key::D))
-                    ap::MoveRight(transform, player.speed * deltaTime);
-            });
-    }
-};
-
-class SpinSystem : public ap::System {
-public:
-    void OnUpdate(ap::Engine& engine) override {
-        engine.GetWorld().Each<ap::Transform, Spin>(
-            [](ap::Entity, ap::Transform& transform, Spin& spin) {
-                ap::AddRotation(transform, spin.delta);
-            });
-    }
-};
-
-// Toggles the collider wireframe overlay when B is pressed. Edge-detected so a
-// held key flips it once rather than every frame.
-class DebugToggleSystem : public ap::System {
-public:
-    void OnUpdate(ap::Engine& engine) override {
-        const bool down = engine.GetInput().IsKeyDown(ap::Key::B);
-        if (down && !wasDown)
-            engine.SetDebugDrawColliders(!engine.IsDebugDrawColliders());
-        wasDown = down;
-    }
-private:
-    bool wasDown = false;
-};
+#include "components/register.h"
+#include "game/game_state.h"
+#include "systems/debug_toggle_system.h"
+#include "systems/pause_system.h"
+#include "systems/player_controller_system.h"
+#include "systems/spin_system.h"
 
 int main(int argc, char** argv) {
     ap::EngineConfig config;
     config.title = "Project Anchor Point";
     config.startScene = "first";
 
-    // --headless --frames N lets the sandbox run without a window/GPU,
-    // e.g. on CI or non-Windows platforms without a renderer backend.
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--headless") == 0)
             config.headless = true;
@@ -99,32 +41,24 @@ int main(int argc, char** argv) {
 
     ap::Engine engine(config);
 
-    // Make the custom components loadable from .scene files.
-    engine.GetScenes().RegisterComponent("PlayerController",
-        [](ap::World& world, ap::Entity entity, const json& data) {
-            auto& player = world.Add<PlayerController>(entity);
-            if (data.contains("sensitivity")) player.sensitivity = data["sensitivity"].get<float>();
-            if (data.contains("speed")) player.speed = data["speed"].get<float>();
-        });
+    // Make the sandbox's custom components loadable from .scene files.
+    sandbox::RegisterComponents(engine.GetScenes());
 
-    engine.GetScenes().RegisterComponent("Spin",
-        [](ap::World& world, ap::Entity entity, const json& data) {
-            auto& spin = world.Add<Spin>(entity);
-            spin.delta = {data["delta"][0].get<float>(),
-                          data["delta"][1].get<float>(),
-                          data["delta"][2].get<float>()};
-        });
-
-    // Gameplay systems run before the engine's built-in collision/render
-    // systems because they are added before Init().
-    engine.AddSystem<PlayerControllerSystem>();
-    engine.AddSystem<SpinSystem>();
-    engine.AddSystem<DebugToggleSystem>();  // press B to toggle collider outlines
+    // PlayerController and Spin run only while Playing; Pause and DebugToggle
+    // run in every state. Systems added before Init() run before the engine's
+    // built-in collision/render systems each frame.
+    engine.AddSystem<sandbox::PlayerControllerSystem>();
+    engine.AddSystem<sandbox::SpinSystem>();
+    engine.AddSystem<sandbox::PauseSystem>();      // press P to pause/resume
+    engine.AddSystem<sandbox::DebugToggleSystem>(); // press B for collider outlines
 
     if (engine.Init() != 0) {
         ap::LogError("Failed to initialize engine");
         return -1;
     }
+
+    // Start in the Playing state (creates the singleton GameStateContext).
+    sandbox::SetState(engine.GetWorld(), sandbox::GameState::Playing);
 
     engine.Run();
     return 0;

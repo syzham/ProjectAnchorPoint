@@ -1,4 +1,11 @@
-add_executable(sandbox main.cpp)
+add_executable(sandbox
+        main.cpp
+        game/game_state.cpp
+        components/register.cpp
+)
+# Sandbox sources include each other relative to this directory
+# (e.g. #include "systems/spin_system.h").
+target_include_directories(sandbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(sandbox PRIVATE AnchorPoint::anchorpoint)
 
 # Run the sandbox from its own build directory with the data it needs.

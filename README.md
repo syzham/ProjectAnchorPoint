@@ -101,6 +101,38 @@ int main() {
 See `examples/sandbox/` for a complete game with mouse-look, WASD movement
 (the old C# `PlayerController` ported to a C++ system) and collision.
 
+### Example layout & game states
+
+The sandbox is split so `main.cpp` stays a readable wiring-up of the game:
+
+```
+examples/sandbox/
+  main.cpp            wires components + systems together
+  components/         plain-data components (+ their scene loaders)
+  systems/            behaviour, one System per file
+  game/               the game-state machine
+```
+
+Systems can declare which game state they run in. This stays pure-ECS: the
+active state is a singleton component (`GameStateContext`) in the World, and a
+small `StateSystem` base gates `OnUpdate`/`OnFixedUpdate` with a query — no
+scheduler or engine changes. A system "registers" its states through the base
+constructor:
+
+```cpp
+class PlayerControllerSystem : public StateSystem {
+public:
+    PlayerControllerSystem() : StateSystem({GameState::Playing}) {}   // only while Playing
+protected:
+    void OnUpdateInState(ap::Engine& engine) override { /* ... */ }
+};
+```
+
+An empty state list (or deriving from `ap::System` directly) means "run in
+every state" — used by the pause and debug-toggle systems. In the sandbox,
+**P** pauses/resumes (gameplay systems stop, the rest keep running) and **B**
+toggles the collider overlay.
+
 ### Built-in components and systems
 
 | Component | Scene key | Purpose |
