@@ -1,3 +1,5 @@
 .idea/
-scripts/GameScripts/bin
-scripts/GameScripts/obj
+build/
+build-*/
+cmake-build-*/
+install/

@@ -3,6 +3,11 @@
     "vertex": "shaders/VS.hlsl",
     "pixel": "shaders/PS.hlsl"
   },
-  "diffuseColor": [1.0, 1.0, 1.0],
-  "texture": "assets/textures/bricks.jpg"
+  "diffuseColor": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "texture": "assets/textures/bricks.jpg",
+  "normalMap": "assets/textures/bricks_normal.png"
 }

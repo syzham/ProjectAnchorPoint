@@ -1,138 +1,134 @@
-cmake_minimum_required(VERSION 3.31)
-project(ProjectAnchorPoint)
+cmake_minimum_required(VERSION 3.20)
+project(AnchorPoint VERSION 0.2.0 LANGUAGES CXX)
+
+option(ANCHORPOINT_BUILD_SHARED "Build AnchorPoint as a shared library (DLL)" ON)
+option(ANCHORPOINT_BUILD_EXAMPLES "Build the example projects" ON)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_compile_definitions(_DEBUG)
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_executable(ProjectAnchorPoint
-        src/main.cpp
-        include/window/window.h
-        src/window/window.cpp
-        include/graphics/graphics.h
-        src/graphics/graphics.cpp
-        include/core/config.h
-        src/core/config.cpp
-        include/graphics/mesh.h
-        src/graphics/mesh.cpp
-        include/graphics/scene.h
-        src/graphics/scene.cpp
-        include/graphics/shader.h
-        src/graphics/shader.cpp
-        include/graphics/camera.h
-        src/graphics/camera.cpp
-        include/graphics/light.h
-        src/WICTextureLoader11.cpp
-        include/core/gameEngine.h
-        include/game/SceneManager.h
-        src/game/SceneManager.cpp
-        src/core/gameEngine.cpp
-        include/game/components/component.h
-        src/game/components/transform.cpp
-        include/game/components/transform.h
-        include/game/components/meshrenderer.h
-        src/game/components/meshrenderer.cpp
-        include/game/components/lightcomponent.h
-        src/game/components/lightcomponent.cpp
-        src/graphics/light.cpp
-        src/game/ScriptBehaviour.cpp
-        include/game/ScriptBehaviour.h
-        include/game/components/scriptcomponent.h
-        src/game/components/scriptcomponent.cpp
-        include/window/cursor.h
-        src/window/cursor.cpp
-        include/game/components/cameracomponent.h
-        src/game/components/cameracomponent.cpp
-        include/game/InputManager.h
-        src/game/InputManager.cpp
-        include/core/logger.h
-        src/core/logger.cpp
-        include/game/components/colliders/aacollider.h
-        include/common.h
-        src/game/components/colliders/aacollider.cpp
-        include/game/CollisionManager.h
-        src/game/CollisionManager.cpp
-        include/game/components/colliders/collidercomponent.h
-        src/game/components/colliders/collidercomponent.cpp
+# ----------------------------------------------------------------------------
+# Library
+# ----------------------------------------------------------------------------
+
+set(ANCHORPOINT_SOURCES
+        src/core/engine.cpp
+        src/core/log.cpp
+        src/assets/mesh.cpp
+        src/scene/scene_loader.cpp
+        src/systems/collision_system.cpp
+        src/systems/render_system.cpp
+        src/platform/platform.cpp
 )
 
-set(
-        DLLS
-        ${CMAKE_SOURCE_DIR}/hostfxr.dll
-        ${CMAKE_SOURCE_DIR}/nethost.dll
+if(WIN32)
+    list(APPEND ANCHORPOINT_SOURCES
+            src/platform/win32/win32_window.cpp
+            src/platform/d3d11/d3d11_renderer.cpp
+            src/platform/d3d11/WICTextureLoader11.cpp
+    )
+elseif(APPLE)
+    enable_language(OBJCXX)
+    set(ANCHORPOINT_OBJCXX_SOURCES
+            src/platform/cocoa/cocoa_window.mm
+            src/platform/metal/metal_renderer.mm
+    )
+    # The Objective-C++ backends rely on ARC for memory management.
+    set_source_files_properties(${ANCHORPOINT_OBJCXX_SOURCES}
+            PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    list(APPEND ANCHORPOINT_SOURCES ${ANCHORPOINT_OBJCXX_SOURCES})
+endif()
+
+if(ANCHORPOINT_BUILD_SHARED)
+    add_library(anchorpoint SHARED ${ANCHORPOINT_SOURCES})
+    target_compile_definitions(anchorpoint
+            PUBLIC ANCHORPOINT_SHARED
+            PRIVATE ANCHORPOINT_EXPORTS)
+else()
+    add_library(anchorpoint STATIC ${ANCHORPOINT_SOURCES})
+endif()
+add_library(AnchorPoint::anchorpoint ALIAS anchorpoint)
+
+target_include_directories(anchorpoint
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set(
-        CONFIGS
-        ${CMAKE_SOURCE_DIR}/GameScripts.runtimeconfig.json
+set_target_properties(anchorpoint PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        POSITION_INDEPENDENT_CODE ON
 )
 
-add_library(ScriptExport SHARED
-        include/game/ScriptExport.h
-        src/game/ScriptExport.cpp
-        include/game/components/transform.h
-        src/game/components/transform.cpp
-        include/game/InputManager.h
-        src/game/InputManager.cpp
-        include/core/config.h
-        src/core/config.cpp
+if(WIN32)
+    target_compile_definitions(anchorpoint PRIVATE UNICODE _UNICODE NOMINMAX)
+    target_link_libraries(anchorpoint PRIVATE d3d11 dxgi d3dcompiler user32)
+elseif(APPLE)
+    target_link_libraries(anchorpoint PRIVATE
+            "-framework Cocoa"
+            "-framework Metal"
+            "-framework MetalKit"
+            "-framework QuartzCore"
+            "-framework CoreGraphics"
+            "-framework Foundation")
+endif()
+
+if(MSVC)
+    # Exported classes legitimately contain STL members; consumers must use
+    # the same toolchain/runtime, which is standard for C++ SDKs.
+    target_compile_options(anchorpoint PRIVATE /wd4251)
+endif()
+
+# ----------------------------------------------------------------------------
+# Install rules: produces the include/, lib/ and bin/ (DLL) SDK layout and a
+# CMake package so consumers can use find_package(AnchorPoint).
+# ----------------------------------------------------------------------------
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(TARGETS anchorpoint
+        EXPORT AnchorPointTargets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-target_compile_definitions(ProjectAnchorPoint PRIVATE UNICODE _UNICODE)
-set_target_properties(ProjectAnchorPoint PROPERTIES WIN32_EXECUTABLE ON)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-include_directories(
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.xxxxx.x/um"
-        ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/external/nethost/include
-)
-link_directories(
-        "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.xxxxx.x/um/x64"
-        ${PROJECT_SOURCE_DIR}/external/nethost/lib
+install(EXPORT AnchorPointTargets
+        NAMESPACE AnchorPoint::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnchorPoint
 )
 
-target_link_libraries(
-        ProjectAnchorPoint
-        d3d11
-        dxgi
-        d3dcompiler
-        user32
-        ${PROJECT_SOURCE_DIR}/external/nethost/lib/nethost.lib
+configure_package_config_file(
+        cmake/AnchorPointConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/AnchorPointConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnchorPoint
 )
 
-
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/scenes $<TARGET_FILE_DIR:ProjectAnchorPoint>/scenes)
-
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:ProjectAnchorPoint>/assets)
-
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:ProjectAnchorPoint>/shaders)
-
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${DLLS}
-        ${CONFIGS}
-        $<TARGET_FILE_DIR:ProjectAnchorPoint>)
-
-add_custom_target(BuildGameScriptsDLL
-        COMMAND dotnet build ${CMAKE_SOURCE_DIR}/scripts/GameScripts -c Release -p:Platform=""
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_SOURCE_DIR}/scripts/GameScripts/bin/Release/net8.0/GameScripts.dll
-        ${CMAKE_SOURCE_DIR}/GameScripts.dll
-        BYPRODUCTS ${CMAKE_SOURCE_DIR}/GameScripts.dll
-        COMMENT "Building and copying GameScripts.dll"
-        VERBATIM
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/AnchorPointConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
 )
 
-add_custom_command(TARGET ProjectAnchorPoint POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/scripts/GameScripts/bin/Release/net8.0 $<TARGET_FILE_DIR:ProjectAnchorPoint>)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/AnchorPointConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/AnchorPointConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnchorPoint
+)
 
-add_dependencies(ProjectAnchorPoint ScriptExport BuildGameScriptsDLL)
+# ----------------------------------------------------------------------------
+# Examples
+# ----------------------------------------------------------------------------
+
+if(ANCHORPOINT_BUILD_EXAMPLES)
+    add_subdirectory(examples/sandbox)
+endif()
