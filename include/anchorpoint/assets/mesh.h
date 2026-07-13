@@ -20,6 +20,9 @@ AP_API PrimitiveTopology ParseTopology(const std::string& str);
 struct Vertex {
     Vector3 position;
     Vector3 normal;
+    // Tangent of the UV mapping, used for normal mapping. Computed per
+    // triangle by LoadOBJ; defaults to +X when the mesh has no UVs.
+    Vector3 tangent = {1, 0, 0};
     float u = 0, v = 0;
 };
 
@@ -28,6 +31,8 @@ struct MaterialData {
     std::string vertexShader;
     std::string pixelShader;
     std::string texture;
+    // Optional tangent-space normal map; empty means a flat surface.
+    std::string normalMap;
 };
 
 // CPU-side mesh data, fully platform independent. Renderer backends turn

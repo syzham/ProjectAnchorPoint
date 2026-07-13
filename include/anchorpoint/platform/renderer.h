@@ -50,6 +50,32 @@ struct FrameData {
     std::vector<DebugVertex> debugLines;
 };
 
+// Builds the view-projection matrix used to render the shadow map for the
+// first directional light in the frame (looking along the light's direction
+// at the world origin). Returns false when the frame has no directional
+// light, in which case backends skip the shadow pass and shade fully lit.
+inline bool DirectionalLightViewProj(const FrameData& frame, Matrix4& out) {
+    for (const GpuLight& light : frame.lights) {
+        if (light.type != 0) continue;
+
+        Vector3 direction = Normalize(light.direction);
+        if (Length(direction) == 0.0f) direction = {0, -1, 0};
+
+        // Pick an up vector that is not parallel to the light direction.
+        const Vector3 up = (std::abs(direction.y) > 0.99f) ? Vector3{0, 0, 1}
+                                                           : Vector3{0, 1, 0};
+
+        constexpr float kShadowDistance = 50.0f; // light camera offset from origin
+        constexpr float kShadowExtent = 60.0f;   // width/height of the covered volume
+        const Vector3 eye = direction * -kShadowDistance;
+
+        out = Matrix4::LookAtLH(eye, {0, 0, 0}, up)
+            * Matrix4::OrthographicLH(kShadowExtent, kShadowExtent, 0.1f, 100.0f);
+        return true;
+    }
+    return false;
+}
+
 // Appends the 12 edges (24 vertices) of an axis-aligned box to a debug line
 // list. Reusable for any debug visualisation, not just colliders.
 inline void AppendAABBWireframe(std::vector<DebugVertex>& out,

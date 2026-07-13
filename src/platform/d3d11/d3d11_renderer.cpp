@@ -15,6 +15,7 @@ namespace {
 struct ObjectBuffer {
     float worldViewProj[4][4];
     float world[4][4];
+    float lightViewProj[4][4];
 };
 
 struct MaterialBuffer {
@@ -125,10 +126,82 @@ bool D3D11Renderer::Init(Window& window, const EngineConfig& config) {
     dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
     device->CreateDepthStencilState(&dsDesc, &depthState);
 
+    screenWidth = config.width;
+    screenHeight = config.height;
+
     if (!LoadDebugShader())
         LogError("Debug collider overlay unavailable (failed to load debug shaders)");
+    if (!CreateShadowResources(config.shadowMapSize))
+        LogError("Shadows unavailable (failed to create shadow map)");
+    if (!CreateDefaultNormalTexture())
+        LogError("Failed to create default normal texture");
 
     return true;
+}
+
+bool D3D11Renderer::CreateShadowResources(int size) {
+    shadowMapSize = size;
+
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = size;
+    texDesc.Height = size;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+
+    ID3D11Texture2D* texture = nullptr;
+    if (FAILED(device->CreateTexture2D(&texDesc, nullptr, &texture)))
+        return false;
+
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    HRESULT hr = device->CreateDepthStencilView(texture, &dsvDesc, &shadowDSV);
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    if (SUCCEEDED(hr))
+        hr = device->CreateShaderResourceView(texture, &srvDesc, &shadowSRV);
+    texture->Release();
+    if (FAILED(hr))
+        return false;
+
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = sampDesc.AddressV = sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+    return SUCCEEDED(device->CreateSamplerState(&sampDesc, &shadowSampler));
+}
+
+bool D3D11Renderer::CreateDefaultNormalTexture() {
+    // (128, 128, 255) decodes to the (0, 0, 1) tangent-space normal: flat.
+    const unsigned char flat[4] = {128, 128, 255, 255};
+
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = 1;
+    texDesc.Height = 1;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_IMMUTABLE;
+    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = flat;
+    initData.SysMemPitch = 4;
+
+    ID3D11Texture2D* texture = nullptr;
+    if (FAILED(device->CreateTexture2D(&texDesc, &initData, &texture)))
+        return false;
+    const HRESULT hr = device->CreateShaderResourceView(texture, nullptr, &defaultNormalSRV);
+    texture->Release();
+    return SUCCEEDED(hr);
 }
 
 bool D3D11Renderer::LoadDebugShader() {
@@ -203,7 +276,8 @@ bool D3D11Renderer::LoadShader(const std::wstring& vsPath, const std::wstring& p
     const D3D11_INPUT_ELEMENT_DESC layout[] = {
             {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
             {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 6, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 6, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 9, D3D11_INPUT_PER_VERTEX_DATA, 0},
     };
 
     hr = device->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(),
@@ -247,6 +321,10 @@ MeshHandle D3D11Renderer::CreateMesh(const MeshData& data) {
     if (!data.material.texture.empty())
         DirectX::CreateWICTextureFromFile(device, Widen(data.material.texture).c_str(),
                                           nullptr, &mesh.textureSRV);
+
+    if (!data.material.normalMap.empty())
+        DirectX::CreateWICTextureFromFile(device, Widen(data.material.normalMap).c_str(),
+                                          nullptr, &mesh.normalMapSRV);
 
     D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -297,13 +375,81 @@ void D3D11Renderer::UpdateLightBuffer(const std::vector<GpuLight>& lights) {
     context->PSSetShaderResources(0, 1, &lightSRV);
 }
 
+void D3D11Renderer::RenderShadowPass(const FrameData& frame, const Matrix4& lightViewProj) {
+    // The shadow map was bound as a PS resource last frame; unbind it before
+    // reusing it as the depth target.
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    context->PSSetShaderResources(3, 1, &nullSRV);
+
+    context->ClearDepthStencilView(shadowDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+    context->OMSetRenderTargets(0, nullptr, shadowDSV);
+    context->OMSetDepthStencilState(depthState, 0);
+
+    D3D11_VIEWPORT viewport = {};
+    viewport.Width = static_cast<float>(shadowMapSize);
+    viewport.Height = static_cast<float>(shadowMapSize);
+    viewport.MaxDepth = 1.0f;
+    context->RSSetViewports(1, &viewport);
+
+    // Depth-only: reuse each mesh's vertex shader with no pixel shader.
+    context->PSSetShader(nullptr, nullptr, 0);
+
+    for (const DrawItem& item : frame.items) {
+        const auto it = meshes.find(item.mesh);
+        if (it == meshes.end()) continue;
+        MeshResource& mesh = it->second;
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        context->Map(objectBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        auto* objBuffer = static_cast<ObjectBuffer*>(mapped.pData);
+        StoreTransposed(item.world * lightViewProj, objBuffer->worldViewProj);
+        StoreTransposed(item.world, objBuffer->world);
+        StoreTransposed(Matrix4::Identity(), objBuffer->lightViewProj);
+        context->Unmap(objectBuffer, 0);
+        context->VSSetConstantBuffers(1, 1, &objectBuffer);
+
+        UINT stride = sizeof(Vertex);
+        UINT offset = 0;
+        context->IASetVertexBuffers(0, 1, &mesh.vertexBuffer, &stride, &offset);
+        context->IASetPrimitiveTopology(mesh.topology);
+        context->IASetInputLayout(mesh.shader.inputLayout);
+        context->VSSetShader(mesh.shader.vertexShader, nullptr, 0);
+
+        context->Draw(mesh.vertexCount, 0);
+    }
+
+    // Restore the screen viewport for the main pass.
+    D3D11_VIEWPORT screenViewport = {};
+    screenViewport.Width = static_cast<float>(screenWidth);
+    screenViewport.Height = static_cast<float>(screenHeight);
+    screenViewport.MaxDepth = 1.0f;
+    context->RSSetViewports(1, &screenViewport);
+}
+
 void D3D11Renderer::RenderFrame(const FrameData& frame) {
+    Matrix4 lightViewProj;
+    const bool hasShadows = DirectionalLightViewProj(frame, lightViewProj)
+                          && shadowDSV != nullptr;
+    if (hasShadows) {
+        RenderShadowPass(frame, lightViewProj);
+    } else {
+        // All zeros makes lightSpacePos.w == 0, which the pixel shader reads
+        // as "no shadows".
+        for (auto& row : lightViewProj.m)
+            for (float& value : row)
+                value = 0.0f;
+    }
+
     context->ClearRenderTargetView(backBuffer, frame.clearColor);
     context->ClearDepthStencilView(depthView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     context->OMSetRenderTargets(1, &backBuffer, depthView);
     context->OMSetDepthStencilState(depthState, 0);
 
     UpdateLightBuffer(frame.lights);
+
+    if (hasShadows)
+        context->PSSetShaderResources(3, 1, &shadowSRV);
+    context->PSSetSamplers(1, 1, &shadowSampler);
 
     const Matrix4 viewProj = frame.view * frame.projection;
 
@@ -317,6 +463,7 @@ void D3D11Renderer::RenderFrame(const FrameData& frame) {
         auto* objBuffer = static_cast<ObjectBuffer*>(mapped.pData);
         StoreTransposed(item.world * viewProj, objBuffer->worldViewProj);
         StoreTransposed(item.world, objBuffer->world);
+        StoreTransposed(lightViewProj, objBuffer->lightViewProj);
         context->Unmap(objectBuffer, 0);
         context->VSSetConstantBuffers(1, 1, &objectBuffer);
 
@@ -334,6 +481,9 @@ void D3D11Renderer::RenderFrame(const FrameData& frame) {
         context->IASetPrimitiveTopology(mesh.topology);
 
         context->PSSetShaderResources(1, 1, &mesh.textureSRV);
+        ID3D11ShaderResourceView* normalSRV =
+            mesh.normalMapSRV ? mesh.normalMapSRV : defaultNormalSRV;
+        context->PSSetShaderResources(2, 1, &normalSRV);
         context->PSSetSamplers(0, 1, &mesh.samplerState);
 
         context->IASetInputLayout(mesh.shader.inputLayout);
@@ -399,6 +549,7 @@ void D3D11Renderer::ReleaseMesh(MeshResource& mesh) {
     SafeRelease(mesh.vertexBuffer);
     SafeRelease(mesh.materialBuffer);
     SafeRelease(mesh.textureSRV);
+    SafeRelease(mesh.normalMapSRV);
     SafeRelease(mesh.samplerState);
     ReleaseShader(mesh.shader);
 }
@@ -410,6 +561,10 @@ void D3D11Renderer::Shutdown() {
 
     SafeRelease(debugVertexBuffer);
     ReleaseShader(debugShader);
+    SafeRelease(shadowDSV);
+    SafeRelease(shadowSRV);
+    SafeRelease(shadowSampler);
+    SafeRelease(defaultNormalSRV);
     SafeRelease(lightSRV);
     SafeRelease(lightBuffer);
     SafeRelease(objectBuffer);

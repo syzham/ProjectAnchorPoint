@@ -29,6 +29,9 @@ private:
         ID3D11Buffer* vertexBuffer = nullptr;
         ID3D11Buffer* materialBuffer = nullptr;
         ID3D11ShaderResourceView* textureSRV = nullptr;
+        // Null when the material has no normal map; the flat default is
+        // bound instead at draw time.
+        ID3D11ShaderResourceView* normalMapSRV = nullptr;
         ID3D11SamplerState* samplerState = nullptr;
         ShaderProgram shader;
         UINT vertexCount = 0;
@@ -38,9 +41,12 @@ private:
 
     bool LoadShader(const std::wstring& vsPath, const std::wstring& psPath, ShaderProgram& out);
     bool LoadDebugShader();
+    bool CreateShadowResources(int size);
+    bool CreateDefaultNormalTexture();
     void ReleaseShader(ShaderProgram& shader);
     void ReleaseMesh(MeshResource& mesh);
     void UpdateLightBuffer(const std::vector<GpuLight>& lights);
+    void RenderShadowPass(const FrameData& frame, const Matrix4& lightViewProj);
     void DrawDebugLines(const std::vector<DebugVertex>& lines, const Matrix4& viewProj);
 
     IDXGISwapChain* swapChain = nullptr;
@@ -58,6 +64,18 @@ private:
     ShaderProgram debugShader;
     ID3D11Buffer* debugVertexBuffer = nullptr;
     std::size_t debugVertexCapacity = 0;
+
+    // Directional-light shadow map (depth-only render target + PS resource).
+    ID3D11DepthStencilView* shadowDSV = nullptr;
+    ID3D11ShaderResourceView* shadowSRV = nullptr;
+    ID3D11SamplerState* shadowSampler = nullptr;
+    int shadowMapSize = 0;
+
+    // 1x1 (0.5, 0.5, 1) texture bound for meshes without a normal map.
+    ID3D11ShaderResourceView* defaultNormalSRV = nullptr;
+
+    int screenWidth = 0;
+    int screenHeight = 0;
 
     std::unordered_map<MeshHandle, MeshResource> meshes;
     MeshHandle nextHandle = 1;

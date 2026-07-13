@@ -147,6 +147,17 @@ struct Matrix4 {
         return r;
     }
 
+    // Left-handed orthographic projection with z in [0, 1]; used for
+    // directional-light shadow maps.
+    static Matrix4 OrthographicLH(float width, float height, float nearZ, float farZ) {
+        Matrix4 r;
+        r.m[0][0] = 2.0f / width;
+        r.m[1][1] = 2.0f / height;
+        r.m[2][2] = 1.0f / (farZ - nearZ);
+        r.m[3][2] = -nearZ / (farZ - nearZ);
+        return r;
+    }
+
     static Matrix4 LookAtLH(const Vector3& eye, const Vector3& target, const Vector3& up) {
         const Vector3 zAxis = Normalize(target - eye);
         const Vector3 xAxis = Normalize(Cross(up, zAxis));

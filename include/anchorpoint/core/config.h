@@ -14,6 +14,9 @@ struct EngineConfig {
     float fixedDelta = 1.0f / 60.0f;
     float clearColor[4] = {0.2f, 0.4f, 0.6f, 1.0f};
 
+    // Resolution of the directional-light shadow map (square, in texels).
+    int shadowMapSize = 2048;
+
     // Centre and hide the cursor for FPS-style mouse-look input.
     bool captureCursor = true;
 

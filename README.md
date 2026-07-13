@@ -157,6 +157,31 @@ compiles `shaders/Shader.metal` (an MSL port of the same lighting plus the
 debug line shaders) at runtime. Ship the `shaders/` directory alongside your
 executable for whichever platform you target.
 
+### Lighting, normal maps and shadows
+
+Lighting is Lambertian over the scene's `Light` components with a small
+ambient term, plus:
+
+- **Normal maps** — add a `"normalMap"` entry to a `.mtrl` material to give
+  meshes per-pixel surface detail. Tangents are generated automatically when
+  the OBJ is loaded; materials without a normal map render flat as before.
+
+  ```json
+  {
+    "shader": { "vertex": "shaders/VS.hlsl", "pixel": "shaders/PS.hlsl" },
+    "diffuseColor": [1.0, 1.0, 1.0],
+    "texture": "assets/textures/bricks.jpg",
+    "normalMap": "assets/textures/bricks_normal.png"
+  }
+  ```
+
+- **Shadows** — the first directional light casts real shadows: each frame a
+  depth-only pass renders the scene from the light into a shadow map
+  (`EngineConfig::shadowMapSize`, default 2048), and the main pass samples it
+  with a 3x3 PCF filter, so objects cast soft-edged shadows onto each other
+  instead of every away-facing side simply going dark. Scenes without a
+  directional light skip the pass entirely.
+
 ### Debug collider overlay
 
 A debug mode draws a wireframe box around every `AABBCollider` — green for

@@ -24,6 +24,7 @@ namespace {
 struct Uniforms {
     simd_float4x4 worldViewProj;
     simd_float4x4 world;
+    simd_float4x4 lightViewProj;
 };
 
 simd_float4x4 ToSimd(const Matrix4& m) {
@@ -50,6 +51,9 @@ struct MetalRenderer::Impl {
     struct MeshResource {
         id<MTLBuffer> vertexBuffer = nil;
         id<MTLTexture> texture = nil;
+        // nil when the material has no normal map; the flat default is
+        // bound instead at draw time.
+        id<MTLTexture> normalMap = nil;
         NSUInteger vertexCount = 0;
         MTLPrimitiveType topology = MTLPrimitiveTypeTriangle;
         simd_float4 diffuseColor = {1, 1, 1, 1};
@@ -59,11 +63,15 @@ struct MetalRenderer::Impl {
     id<MTLCommandQueue> commandQueue = nil;
     CAMetalLayer* layer = nil;
     id<MTLRenderPipelineState> pipeline = nil;
+    id<MTLRenderPipelineState> shadowPipeline = nil;
     id<MTLRenderPipelineState> debugPipeline = nil;
     id<MTLDepthStencilState> depthState = nil;
     id<MTLTexture> depthTexture = nil;
     id<MTLSamplerState> sampler = nil;
+    id<MTLSamplerState> shadowSampler = nil;
     id<MTLTexture> whiteTexture = nil;
+    id<MTLTexture> flatNormalTexture = nil;
+    id<MTLTexture> shadowTexture = nil;
     id<MTLBuffer> lightBuffer = nil;
     NSUInteger lightCapacity = 0;
     id<MTLBuffer> debugVertexBuffer = nil;
@@ -75,9 +83,14 @@ struct MetalRenderer::Impl {
     int height = 0;
 
     bool BuildPipeline(id<MTLLibrary> library);
+    bool BuildShadowPipeline(id<MTLLibrary> library);
     bool BuildDebugPipeline(id<MTLLibrary> library);
+    bool CreateShadowResources(int size);
     void EnsureDepthTexture(NSUInteger w, NSUInteger h);
-    id<MTLTexture> MakeWhiteTexture();
+    void RenderShadowPass(const FrameData& frame, const Matrix4& lightViewProj,
+                          id<MTLCommandBuffer> commandBuffer);
+    MTLVertexDescriptor* MakeMeshVertexDescriptor();
+    id<MTLTexture> MakeColorTexture(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 };
 
 namespace {
@@ -92,12 +105,9 @@ std::string ReadFile(const std::string& path) {
 
 } // namespace
 
-bool MetalRenderer::Impl::BuildPipeline(id<MTLLibrary> library) {
-    NSError* error = nil;
-    id<MTLFunction> vertexFn = [library newFunctionWithName:@"vertex_main"];
-    id<MTLFunction> fragmentFn = [library newFunctionWithName:@"fragment_main"];
-
-    // Vertex layout mirrors ap::Vertex: pos(float3), normal(float3), uv(float2).
+// Vertex layout mirrors ap::Vertex: pos(float3), normal(float3),
+// tangent(float3), uv(float2).
+MTLVertexDescriptor* MetalRenderer::Impl::MakeMeshVertexDescriptor() {
     MTLVertexDescriptor* vertexDesc = [[MTLVertexDescriptor alloc] init];
     vertexDesc.attributes[0].format = MTLVertexFormatFloat3;
     vertexDesc.attributes[0].offset = 0;
@@ -105,15 +115,25 @@ bool MetalRenderer::Impl::BuildPipeline(id<MTLLibrary> library) {
     vertexDesc.attributes[1].format = MTLVertexFormatFloat3;
     vertexDesc.attributes[1].offset = sizeof(float) * 3;
     vertexDesc.attributes[1].bufferIndex = 0;
-    vertexDesc.attributes[2].format = MTLVertexFormatFloat2;
+    vertexDesc.attributes[2].format = MTLVertexFormatFloat3;
     vertexDesc.attributes[2].offset = sizeof(float) * 6;
     vertexDesc.attributes[2].bufferIndex = 0;
-    vertexDesc.layouts[0].stride = sizeof(float) * 8;
+    vertexDesc.attributes[3].format = MTLVertexFormatFloat2;
+    vertexDesc.attributes[3].offset = sizeof(float) * 9;
+    vertexDesc.attributes[3].bufferIndex = 0;
+    vertexDesc.layouts[0].stride = sizeof(float) * 11;
+    return vertexDesc;
+}
+
+bool MetalRenderer::Impl::BuildPipeline(id<MTLLibrary> library) {
+    NSError* error = nil;
+    id<MTLFunction> vertexFn = [library newFunctionWithName:@"vertex_main"];
+    id<MTLFunction> fragmentFn = [library newFunctionWithName:@"fragment_main"];
 
     MTLRenderPipelineDescriptor* desc = [[MTLRenderPipelineDescriptor alloc] init];
     desc.vertexFunction = vertexFn;
     desc.fragmentFunction = fragmentFn;
-    desc.vertexDescriptor = vertexDesc;
+    desc.vertexDescriptor = MakeMeshVertexDescriptor();
     desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
     desc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
@@ -137,6 +157,49 @@ bool MetalRenderer::Impl::BuildPipeline(id<MTLLibrary> library) {
     sampler = [device newSamplerStateWithDescriptor:sampDesc];
 
     return true;
+}
+
+// Depth-only pipeline for rendering the shadow map. Reuses the main vertex
+// shader with no fragment function and no colour attachment.
+bool MetalRenderer::Impl::BuildShadowPipeline(id<MTLLibrary> library) {
+    id<MTLFunction> vertexFn = [library newFunctionWithName:@"vertex_main"];
+    if (vertexFn == nil)
+        return false;
+
+    MTLRenderPipelineDescriptor* desc = [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction = vertexFn;
+    desc.fragmentFunction = nil;
+    desc.vertexDescriptor = MakeMeshVertexDescriptor();
+    desc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+    NSError* error = nil;
+    shadowPipeline = [device newRenderPipelineStateWithDescriptor:desc error:&error];
+    if (shadowPipeline == nil) {
+        LogError(error ? error.localizedDescription.UTF8String : "Failed to create shadow pipeline");
+        return false;
+    }
+    return true;
+}
+
+bool MetalRenderer::Impl::CreateShadowResources(int size) {
+    MTLTextureDescriptor* desc =
+        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
+                                                           width:size
+                                                          height:size
+                                                       mipmapped:NO];
+    desc.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+    desc.storageMode = MTLStorageModePrivate;
+    shadowTexture = [device newTextureWithDescriptor:desc];
+
+    MTLSamplerDescriptor* sampDesc = [[MTLSamplerDescriptor alloc] init];
+    sampDesc.minFilter = MTLSamplerMinMagFilterLinear;
+    sampDesc.magFilter = MTLSamplerMinMagFilterLinear;
+    sampDesc.sAddressMode = MTLSamplerAddressModeClampToEdge;
+    sampDesc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+    sampDesc.compareFunction = MTLCompareFunctionLessEqual;
+    shadowSampler = [device newSamplerStateWithDescriptor:sampDesc];
+
+    return shadowTexture != nil && shadowSampler != nil;
 }
 
 bool MetalRenderer::Impl::BuildDebugPipeline(id<MTLLibrary> library) {
@@ -186,17 +249,17 @@ void MetalRenderer::Impl::EnsureDepthTexture(NSUInteger w, NSUInteger h) {
     depthTexture = [device newTextureWithDescriptor:desc];
 }
 
-id<MTLTexture> MetalRenderer::Impl::MakeWhiteTexture() {
+id<MTLTexture> MetalRenderer::Impl::MakeColorTexture(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     MTLTextureDescriptor* desc =
         [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
                                                            width:1
                                                           height:1
                                                        mipmapped:NO];
     id<MTLTexture> texture = [device newTextureWithDescriptor:desc];
-    const uint8_t white[4] = {255, 255, 255, 255};
+    const uint8_t pixel[4] = {r, g, b, a};
     [texture replaceRegion:MTLRegionMake2D(0, 0, 1, 1)
                mipmapLevel:0
-                 withBytes:white
+                 withBytes:pixel
                bytesPerRow:4];
     return texture;
 }
@@ -248,10 +311,14 @@ bool MetalRenderer::Init(Window& window, const EngineConfig& config) {
 
         if (!impl->BuildPipeline(library))
             return false;
+        if (!impl->BuildShadowPipeline(library) || !impl->CreateShadowResources(config.shadowMapSize))
+            LogError("Shadows unavailable (failed to create shadow pipeline)");
         if (!impl->BuildDebugPipeline(library))
             LogError("Debug collider overlay unavailable (failed to build debug pipeline)");
 
-        impl->whiteTexture = impl->MakeWhiteTexture();
+        impl->whiteTexture = impl->MakeColorTexture(255, 255, 255, 255);
+        // (128, 128, 255) decodes to the (0, 0, 1) tangent-space normal: flat.
+        impl->flatNormalTexture = impl->MakeColorTexture(128, 128, 255, 255);
         impl->EnsureDepthTexture(impl->layer.drawableSize.width,
                                  impl->layer.drawableSize.height);
         return true;
@@ -274,23 +341,65 @@ MeshHandle MetalRenderer::CreateMesh(const MeshData& data) {
                                                       length:data.vertices.size() * sizeof(Vertex)
                                                      options:MTLResourceStorageModeShared];
 
+        MTKTextureLoader* loader = [[MTKTextureLoader alloc] initWithDevice:impl->device];
+        NSDictionary* options = @{
+            MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginTopLeft,
+            MTKTextureLoaderOptionSRGB : @NO,
+        };
+
         if (!data.material.texture.empty()) {
-            MTKTextureLoader* loader = [[MTKTextureLoader alloc] initWithDevice:impl->device];
             NSURL* url = [NSURL fileURLWithPath:@(data.material.texture.c_str())];
-            NSDictionary* options = @{
-                MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginTopLeft,
-                MTKTextureLoaderOptionSRGB : @NO,
-            };
             NSError* error = nil;
             mesh.texture = [loader newTextureWithContentsOfURL:url options:options error:&error];
             if (mesh.texture == nil)
                 LogError(error ? error.localizedDescription.UTF8String : "Failed to load texture");
         }
 
+        if (!data.material.normalMap.empty()) {
+            NSURL* url = [NSURL fileURLWithPath:@(data.material.normalMap.c_str())];
+            NSError* error = nil;
+            mesh.normalMap = [loader newTextureWithContentsOfURL:url options:options error:&error];
+            if (mesh.normalMap == nil)
+                LogError(error ? error.localizedDescription.UTF8String : "Failed to load normal map");
+        }
+
         const MeshHandle handle = impl->nextHandle++;
         impl->meshes[handle] = mesh;
         return handle;
     }
+}
+
+void MetalRenderer::Impl::RenderShadowPass(const FrameData& frame, const Matrix4& lightViewProj,
+                                           id<MTLCommandBuffer> commandBuffer) {
+    MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
+    pass.depthAttachment.texture = shadowTexture;
+    pass.depthAttachment.loadAction = MTLLoadActionClear;
+    pass.depthAttachment.storeAction = MTLStoreActionStore;
+    pass.depthAttachment.clearDepth = 1.0;
+
+    id<MTLRenderCommandEncoder> encoder =
+        [commandBuffer renderCommandEncoderWithDescriptor:pass];
+    encoder.label = @"AnchorPoint Shadow";
+    [encoder setRenderPipelineState:shadowPipeline];
+    [encoder setDepthStencilState:depthState];
+    [encoder setCullMode:MTLCullModeNone];
+
+    for (const DrawItem& item : frame.items) {
+        const auto it = meshes.find(item.mesh);
+        if (it == meshes.end()) continue;
+        MeshResource& mesh = it->second;
+
+        Uniforms uniforms;
+        uniforms.worldViewProj = ToSimd(item.world * lightViewProj);
+        uniforms.world = ToSimd(item.world);
+        uniforms.lightViewProj = ToSimd(Matrix4::Identity());
+
+        [encoder setVertexBuffer:mesh.vertexBuffer offset:0 atIndex:0];
+        [encoder setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:1];
+        [encoder drawPrimitives:mesh.topology vertexStart:0 vertexCount:mesh.vertexCount];
+    }
+
+    [encoder endEncoding];
 }
 
 void MetalRenderer::RenderFrame(const FrameData& frame) {
@@ -314,6 +423,22 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
                         frame.lights.size() * sizeof(GpuLight));
         }
 
+        id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
+
+        Matrix4 lightViewProj;
+        const bool hasShadows = DirectionalLightViewProj(frame, lightViewProj)
+                              && impl->shadowPipeline != nil
+                              && impl->shadowTexture != nil;
+        if (hasShadows) {
+            impl->RenderShadowPass(frame, lightViewProj, commandBuffer);
+        } else {
+            // All zeros makes lightSpacePos.w == 0, which the fragment shader
+            // reads as "no shadows".
+            for (auto& row : lightViewProj.m)
+                for (float& value : row)
+                    value = 0.0f;
+        }
+
         MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
         pass.colorAttachments[0].texture = drawable.texture;
         pass.colorAttachments[0].loadAction = MTLLoadActionClear;
@@ -325,7 +450,6 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
         pass.depthAttachment.storeAction = MTLStoreActionDontCare;
         pass.depthAttachment.clearDepth = 1.0;
 
-        id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
         id<MTLRenderCommandEncoder> encoder =
             [commandBuffer renderCommandEncoderWithDescriptor:pass];
 
@@ -336,6 +460,12 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
         // winding-order surprises across model sources.
         [encoder setCullMode:MTLCullModeNone];
         [encoder setFragmentSamplerState:impl->sampler atIndex:0];
+        if (impl->shadowSampler != nil)
+            [encoder setFragmentSamplerState:impl->shadowSampler atIndex:1];
+        // The shadow texture must always be bound (the shader declares it);
+        // when there are no shadows the zero light matrix skips sampling it.
+        if (impl->shadowTexture != nil)
+            [encoder setFragmentTexture:impl->shadowTexture atIndex:2];
 
         const Matrix4 viewProj = frame.view * frame.projection;
         const auto lightCount = static_cast<uint32_t>(frame.lights.size());
@@ -348,6 +478,7 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
             Uniforms uniforms;
             uniforms.worldViewProj = ToSimd(item.world * viewProj);
             uniforms.world = ToSimd(item.world);
+            uniforms.lightViewProj = ToSimd(lightViewProj);
 
             [encoder setVertexBuffer:mesh.vertexBuffer offset:0 atIndex:0];
             [encoder setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:1];
@@ -357,6 +488,8 @@ void MetalRenderer::RenderFrame(const FrameData& frame) {
                 [encoder setFragmentBuffer:impl->lightBuffer offset:0 atIndex:1];
             [encoder setFragmentBytes:&lightCount length:sizeof(lightCount) atIndex:2];
             [encoder setFragmentTexture:(mesh.texture ? mesh.texture : impl->whiteTexture) atIndex:0];
+            [encoder setFragmentTexture:(mesh.normalMap ? mesh.normalMap : impl->flatNormalTexture)
+                                atIndex:1];
 
             [encoder drawPrimitives:mesh.topology vertexStart:0 vertexCount:mesh.vertexCount];
         }
@@ -392,10 +525,14 @@ void MetalRenderer::Shutdown() {
     impl->lightBuffer = nil;
     impl->debugVertexBuffer = nil;
     impl->depthTexture = nil;
+    impl->shadowTexture = nil;
     impl->whiteTexture = nil;
+    impl->flatNormalTexture = nil;
     impl->sampler = nil;
+    impl->shadowSampler = nil;
     impl->depthState = nil;
     impl->debugPipeline = nil;
+    impl->shadowPipeline = nil;
     impl->pipeline = nil;
     impl->layer = nil;
     impl->commandQueue = nil;

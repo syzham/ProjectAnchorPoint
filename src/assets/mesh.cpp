@@ -30,7 +30,32 @@ bool LoadMTRL(const std::string& mtlName, MaterialData& out) {
     out.vertexShader = mats["shader"]["vertex"].get<std::string>();
     out.pixelShader = mats["shader"]["pixel"].get<std::string>();
     out.texture = mats["texture"].get<std::string>();
+    if (mats.contains("normalMap"))
+        out.normalMap = mats["normalMap"].get<std::string>();
     return true;
+}
+
+// Computes the UV-space tangent of one triangle and assigns it to all three
+// vertices (the vertex stream is an unindexed triangle soup, so per-face
+// tangents are exact). Leaves the default +X tangent for degenerate or
+// missing UVs.
+void AssignTriangleTangent(Vertex& a, Vertex& b, Vertex& c) {
+    const Vector3 edge1 = b.position - a.position;
+    const Vector3 edge2 = c.position - a.position;
+    const float du1 = b.u - a.u, dv1 = b.v - a.v;
+    const float du2 = c.u - a.u, dv2 = c.v - a.v;
+
+    const float det = du1 * dv2 - du2 * dv1;
+    if (det == 0.0f)
+        return;
+
+    const Vector3 tangent = Normalize((edge1 * dv2 - edge2 * dv1) * (1.0f / det));
+    if (Length(tangent) == 0.0f)
+        return;
+
+    a.tangent = tangent;
+    b.tangent = tangent;
+    c.tangent = tangent;
 }
 
 std::unordered_map<std::string, MaterialData>& MaterialCache() {
@@ -97,6 +122,11 @@ bool LoadOBJ(const std::string& filename, MeshData& out) {
                 out.vertices.push_back(makeVertex(0));
                 out.vertices.push_back(makeVertex(i));
                 out.vertices.push_back(makeVertex(i + 1));
+
+                const std::size_t last = out.vertices.size() - 1;
+                AssignTriangleTangent(out.vertices[last - 2],
+                                      out.vertices[last - 1],
+                                      out.vertices[last]);
             }
         } else if (type == "usemtl") {
             iss >> mtlName;
